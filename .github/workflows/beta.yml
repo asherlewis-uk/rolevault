@@ -55,9 +55,9 @@ jobs:
       - name: Setup Match SSH key
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.MATCH_SSH_PRIVATE_KEY }}" > ~/.ssh/match_ci
-          chmod 600 ~/.ssh/match_ci
-          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          eval "$(ssh-agent -s)"
+          ssh-add - <<< "${{ secrets.MATCH_SSH_PRIVATE_KEY }}"
           git config --global url."git@github.com:".insteadOf "https://github.com/"
 
       - name: Run Fastlane beta
@@ -65,7 +65,6 @@ jobs:
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          GIT_SSH_COMMAND: ssh -i ~/.ssh/match_ci -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
