@@ -4,8 +4,12 @@ set -euo pipefail
 # setup-swiftly.sh
 # Installs Swiftly (Swift toolchain manager), Swift 6.0, and ensures PATH is configured.
 # Run: chmod +x setup-swiftly.sh && ./setup-swiftly.sh
+#
+# macOS: downloads the official .pkg installer from Swift.org
+# Linux: downloads the tarball from Swift.org
 
-SWIFTLY_BIN="${HOME}/.swiftly/bin"
+SWIFTLY_HOME="${SWIFTLY_HOME_DIR:-${HOME}/.swiftly}"
+SWIFTLY_BIN="${SWIFTLY_HOME}/bin"
 SHELL_PROFILE=""
 
 # Detect shell profile
@@ -35,24 +39,49 @@ install_swiftly() {
     fi
 
     echo "📥 Installing swiftly..."
-    curl -L https://swift.org/install/install.sh | bash
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        install_swiftly_macos
+    else
+        install_swiftly_linux
+    fi
 
     # Source the swiftly env for this session
-    if [[ -f "${HOME}/.swiftly/env.sh" ]]; then
+    if [[ -f "${SWIFTLY_HOME}/env.sh" ]]; then
         # shellcheck source=/dev/null
-        source "${HOME}/.swiftly/env.sh"
+        source "${SWIFTLY_HOME}/env.sh"
     fi
 }
 
-# Initialize swiftly
-init_swiftly() {
-    if [[ -d "${HOME}/.swiftly" ]]; then
-        echo "✅ swiftly already initialized"
-        return 0
-    fi
+install_swiftly_macos() {
+    local pkg="swiftly.pkg"
+    echo "🍎 Detected macOS. Downloading swiftly.pkg..."
+    curl -fsSL -O "https://download.swift.org/swiftly/darwin/${pkg}"
+
+    echo "📦 Installing swiftly.pkg to user home..."
+    installer -pkg "${pkg}" -target CurrentUserHomeDirectory
+
+    rm -f "${pkg}"
 
     echo "🔧 Running swiftly init..."
-    swiftly init
+    "${SWIFTLY_BIN}/swiftly" init --quiet-shell-followup
+}
+
+install_swiftly_linux() {
+    local arch
+    arch=$(uname -m)
+    local tarball="swiftly-${arch}.tar.gz"
+
+    echo "🐧 Detected Linux (${arch}). Downloading swiftly tarball..."
+    curl -fsSL -O "https://download.swift.org/swiftly/linux/${tarball}"
+
+    echo "📦 Extracting swiftly..."
+    tar zxf "${tarball}"
+    rm -f "${tarball}"
+
+    echo "🔧 Running swiftly init..."
+    ./swiftly init --quiet-shell-followup
+    rm -f ./swiftly
 }
 
 # Install Swift 6.0
@@ -73,9 +102,9 @@ verify_swift() {
     if ! command -v swift &> /dev/null; then
         echo "❌ swift command not found in PATH after installation"
         echo "   Attempting to source swiftly environment..."
-        if [[ -f "${HOME}/.swiftly/env.sh" ]]; then
+        if [[ -f "${SWIFTLY_HOME}/env.sh" ]]; then
             # shellcheck source=/dev/null
-            source "${HOME}/.swiftly/env.sh"
+            source "${SWIFTLY_HOME}/env.sh"
         fi
     fi
 
@@ -90,7 +119,7 @@ verify_swift() {
     echo "$swift_version"
 }
 
-# Ensure ~/.swiftly/bin is in PATH
+# Ensure swiftly is in PATH
 ensure_path() {
     detect_shell_profile
 
@@ -98,29 +127,27 @@ ensure_path() {
         touch "$SHELL_PROFILE"
     fi
 
-    if grep -q "\.swiftly/bin" "$SHELL_PROFILE" 2>/dev/null; then
-        echo "✅ ~/.swiftly/bin already in PATH (${SHELL_PROFILE})"
+    if grep -q "swiftly/env.sh" "$SHELL_PROFILE" 2>/dev/null; then
+        echo "✅ swiftly environment already sourced in ${SHELL_PROFILE}"
         return 0
     fi
 
-    echo "📝 Adding ~/.swiftly/bin to PATH in ${SHELL_PROFILE}..."
+    echo "📝 Adding swiftly environment to ${SHELL_PROFILE}..."
     cat >> "$SHELL_PROFILE" << 'EOF'
 
 # Swiftly (Swift toolchain manager)
-export PATH="${HOME}/.swiftly/bin:${PATH}"
 if [[ -f "${HOME}/.swiftly/env.sh" ]]; then
     source "${HOME}/.swiftly/env.sh"
 fi
 EOF
 
-    echo "✅ PATH updated. Run: source ${SHELL_PROFILE}"
+    echo "✅ Shell profile updated. Run: source ${SHELL_PROFILE}"
 }
 
 # Main
 main() {
     echo "=== RoleVault Swift Toolchain Setup ==="
     install_swiftly
-    init_swiftly
     install_swift
     activate_swift
     verify_swift

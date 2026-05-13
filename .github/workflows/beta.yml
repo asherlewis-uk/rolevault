@@ -19,26 +19,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Swift toolchain
-        run: |
-          chmod +x ./setup-swiftly.sh
-          ./setup-swiftly.sh
-
-      - name: Add swiftly to PATH
-        run: |
-          echo "${HOME}/.swiftly/bin" >> "$GITHUB_PATH"
-          if [[ -f "${HOME}/.swiftly/env.sh" ]]; then
-            # shellcheck source=/dev/null
-            source "${HOME}/.swiftly/env.sh"
-          fi
-
-      - name: Verify Swift version
-        run: swift --version
-
-      - name: Verify Xcode path
+      - name: Verify Xcode and Swift
         run: |
           echo "Xcode path: $(xcode-select -p)"
           xcodebuild -version
+          echo ""
+          swift --version
 
       - name: Cache Ruby gems
         uses: actions/cache@v4
