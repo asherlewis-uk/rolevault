@@ -55,6 +55,7 @@ platform :ios do
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "RoleVault.xcodeproj",
+      targets: ["RoleVault"],
       team_id: ENV["TEAM_ID"],
       bundle_identifier: "com.rolevault.app",
       profile_name: profile_name,
