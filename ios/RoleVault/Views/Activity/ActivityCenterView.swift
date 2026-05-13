@@ -4,9 +4,9 @@ import SwiftData
 struct ActivityCenterView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @Query(sort: \Character.createdAt, order: .reverse) private var recentCharacters: [Character]
-    @Query(sort: \GalleryMoment.createdAt, order: .reverse) private var recentMoments: [GalleryMoment]
-    @Query(sort: \Conversation.lastMessageAt, order: .reverse) private var recentConversations: [Conversation]
+    @State private var recentCharacters: [Character] = []
+    @State private var recentConversations: [Conversation] = []
+    @State private var recentMoments: [GalleryMoment] = []
 
     var events: [ActivityEvent] {
         var items: [ActivityEvent] = []
@@ -66,6 +66,41 @@ struct ActivityCenterView: View {
                 }
             }
         }
+        .task(id: AuthService.shared.currentUser?.id) {
+            await loadUserScopedData()
+        }
+        .onAppear {
+            Task { await loadUserScopedData() }
+        }
+    }
+
+    @MainActor
+    private func loadUserScopedData() async {
+        guard let userId = AuthService.shared.currentUser?.id else {
+            recentCharacters = []
+            recentConversations = []
+            recentMoments = []
+            return
+        }
+        let context = SwiftDataContainer.shared.context
+
+        let charDescriptor = FetchDescriptor<Character>(
+            predicate: #Predicate { $0.ownerUserId == userId },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        recentCharacters = (try? context.fetch(charDescriptor)) ?? []
+
+        let convoDescriptor = FetchDescriptor<Conversation>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.lastMessageAt, order: .reverse)]
+        )
+        recentConversations = (try? context.fetch(convoDescriptor)) ?? []
+
+        let momentDescriptor = FetchDescriptor<GalleryMoment>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        recentMoments = (try? context.fetch(momentDescriptor)) ?? []
     }
 }
 

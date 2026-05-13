@@ -14,6 +14,7 @@ final class Conversation {
     var title: String
     var characterId: UUID?
     var personaId: UUID?
+    var userId: UUID?
     var lastMessagePreview: String
     var lastMessageAt: Date
     var unreadCount: Int
@@ -26,6 +27,7 @@ final class Conversation {
         title: String = "",
         characterId: UUID? = nil,
         personaId: UUID? = nil,
+        userId: UUID? = nil,
         lastMessagePreview: String = "",
         lastMessageAt: Date = Date(),
         unreadCount: Int = 0,
@@ -36,6 +38,7 @@ final class Conversation {
         self.title = title
         self.characterId = characterId
         self.personaId = personaId
+        self.userId = userId
         self.lastMessagePreview = lastMessagePreview
         self.lastMessageAt = lastMessageAt
         self.unreadCount = unreadCount

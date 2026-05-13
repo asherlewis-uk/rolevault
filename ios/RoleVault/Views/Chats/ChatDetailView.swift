@@ -9,8 +9,7 @@ struct ChatDetailView: View {
     @State private var showPersonaMenu = false
     @State private var scrollOffset: CGFloat = 0
     @State private var appearedMessageIDs = Set<String>()
-    @Query private var personas: [Persona]
-    @Query(sort: \MessageWrapper.id) private var localMessages: [MessageWrapper]
+    @State private var personas: [Persona] = []
 
     var activePersona: Persona? {
         personas.first { $0.isActive }
@@ -84,8 +83,15 @@ struct ChatDetailView: View {
         .confirmationDialog("Switch Persona", isPresented: $showPersonaMenu, titleVisibility: .visible) {
             personaMenuActions
         }
-        .task {
+        .task(id: AuthService.shared.currentUser?.id) {
+            loadPersonas()
             await viewModel.loadConversation(character: character, persona: activePersona)
+        }
+        .onAppear {
+            loadPersonas()
+            Task {
+                await viewModel.loadConversation(character: character, persona: activePersona)
+            }
         }
         .onChange(of: viewModel.messages) { old, new in
             animateNewMessages(old: old, new: new)
@@ -149,7 +155,11 @@ struct ChatDetailView: View {
         for p in personas {
             p.isActive = (p.id == persona.id)
         }
-        try? SwiftDataContainer.shared.context.save()
+        do {
+            try SwiftDataContainer.shared.context.save()
+        } catch {
+            // Best-effort save
+        }
     }
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
@@ -194,6 +204,18 @@ struct ChatDetailView: View {
             }
         }
     }
+
+    @MainActor
+    private func loadPersonas() {
+        guard let userId = AuthService.shared.currentUser?.id else {
+            personas = []
+            return
+        }
+        let descriptor = FetchDescriptor<Persona>(
+            predicate: #Predicate { $0.userId == userId }
+        )
+        personas = (try? SwiftDataContainer.shared.context.fetch(descriptor)) ?? []
+    }
 }
 
 struct ScrollOffsetPreferenceKey: PreferenceKey {
@@ -202,4 +224,3 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
         value = nextValue()
     }
 }
-

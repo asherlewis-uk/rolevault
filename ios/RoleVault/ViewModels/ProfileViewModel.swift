@@ -18,27 +18,58 @@ final class ProfileViewModel {
     // MARK: - Personas
 
     @MainActor
-    func createPersona(name: String, gender: String, backstory: String, avatarData: Data?) -> Persona {
-        let persona = Persona(name: name, gender: gender, backstory: backstory, avatarData: avatarData)
+    func createPersona(name: String, gender: String, backstory: String, avatarData: Data?) -> Persona? {
+        guard let userId = AuthService.shared.currentUser?.id else {
+            errorMessage = "You must be signed in to create a persona."
+            showError = true
+            return nil
+        }
+        let persona = Persona(
+            name: name,
+            gender: gender,
+            backstory: backstory,
+            avatarData: avatarData,
+            isActive: false,
+            userId: userId
+        )
         SwiftDataContainer.shared.context.insert(persona)
-        try? SwiftDataContainer.shared.context.save()
-        return persona
+        do {
+            try SwiftDataContainer.shared.context.save()
+            return persona
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+            return nil
+        }
     }
 
     @MainActor
     func deletePersona(_ persona: Persona) {
         SwiftDataContainer.shared.context.delete(persona)
-        try? SwiftDataContainer.shared.context.save()
+        do {
+            try SwiftDataContainer.shared.context.save()
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
     }
 
     @MainActor
     func setActivePersona(_ persona: Persona) {
-        let descriptor = FetchDescriptor<Persona>()
+        guard let userId = AuthService.shared.currentUser?.id else { return }
+        let descriptor = FetchDescriptor<Persona>(
+            predicate: #Predicate { $0.userId == userId }
+        )
         guard let all = try? SwiftDataContainer.shared.context.fetch(descriptor) else { return }
         for p in all {
             p.isActive = (p.id == persona.id)
         }
-        try? SwiftDataContainer.shared.context.save()
+        do {
+            try SwiftDataContainer.shared.context.save()
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
     }
 
     // MARK: - Backend Configuration
@@ -64,45 +95,99 @@ final class ProfileViewModel {
     // MARK: - Cache Management
 
     @MainActor
-    func clearConversationCache() {
-        let descriptor = FetchDescriptor<Conversation>()
+    func clearConversationCache() throws {
+        guard let userId = AuthService.shared.currentUser?.id else { return }
+        let descriptor = FetchDescriptor<Conversation>(
+            predicate: #Predicate { $0.userId == userId }
+        )
         if let items = try? SwiftDataContainer.shared.context.fetch(descriptor) {
             for item in items {
                 SwiftDataContainer.shared.context.delete(item)
             }
         }
-        try? SwiftDataContainer.shared.context.save()
+        try SwiftDataContainer.shared.context.save()
     }
 
     @MainActor
-    func clearGalleryCache() {
-        let descriptor = FetchDescriptor<GalleryMoment>()
+    func clearGalleryCache() throws {
+        guard let userId = AuthService.shared.currentUser?.id else { return }
+        let descriptor = FetchDescriptor<GalleryMoment>(
+            predicate: #Predicate { $0.userId == userId }
+        )
         if let items = try? SwiftDataContainer.shared.context.fetch(descriptor) {
             for item in items {
                 SwiftDataContainer.shared.context.delete(item)
             }
         }
-        try? SwiftDataContainer.shared.context.save()
+        try SwiftDataContainer.shared.context.save()
     }
 
     @MainActor
     func clearAllLocalData() {
-        clearConversationCache()
-        clearGalleryCache()
+        guard let userId = AuthService.shared.currentUser?.id else { return }
+        let context = SwiftDataContainer.shared.context
 
-        if let chars = try? SwiftDataContainer.shared.context.fetch(FetchDescriptor<Character>()) {
-            chars.forEach { SwiftDataContainer.shared.context.delete($0) }
-        }
-        if let personas = try? SwiftDataContainer.shared.context.fetch(FetchDescriptor<Persona>()) {
-            personas.forEach { SwiftDataContainer.shared.context.delete($0) }
-        }
-        if let journals = try? SwiftDataContainer.shared.context.fetch(FetchDescriptor<JournalEntry>()) {
-            journals.forEach { SwiftDataContainer.shared.context.delete($0) }
-        }
-        if let messages = try? SwiftDataContainer.shared.context.fetch(FetchDescriptor<MessageWrapper>()) {
-            messages.forEach { SwiftDataContainer.shared.context.delete($0) }
-        }
+        do {
+            // Conversations
+            let convoDesc = FetchDescriptor<Conversation>(
+                predicate: #Predicate { $0.userId == userId }
+            )
+            if let items = try? context.fetch(convoDesc) {
+                items.forEach(context.delete)
+            }
 
-        try? SwiftDataContainer.shared.context.save()
+            // Gallery moments
+            let momentDesc = FetchDescriptor<GalleryMoment>(
+                predicate: #Predicate { $0.userId == userId }
+            )
+            if let items = try? context.fetch(momentDesc) {
+                items.forEach(context.delete)
+            }
+
+            // Owned characters
+            let charDesc = FetchDescriptor<Character>(
+                predicate: #Predicate { $0.ownerUserId == userId }
+            )
+            if let chars = try? context.fetch(charDesc) {
+                chars.forEach(context.delete)
+            }
+
+            // Personas
+            let personaDesc = FetchDescriptor<Persona>(
+                predicate: #Predicate { $0.userId == userId }
+            )
+            if let personas = try? context.fetch(personaDesc) {
+                personas.forEach(context.delete)
+            }
+
+            // Journal entries
+            let journalDesc = FetchDescriptor<JournalEntry>(
+                predicate: #Predicate { $0.userId == userId }
+            )
+            if let journals = try? context.fetch(journalDesc) {
+                journals.forEach(context.delete)
+            }
+
+            // Messages
+            let messageDesc = FetchDescriptor<MessageWrapper>(
+                predicate: #Predicate { $0.userId == userId }
+            )
+            if let messages = try? context.fetch(messageDesc) {
+                messages.forEach(context.delete)
+            }
+
+            // Customizations
+            let customizationDesc = FetchDescriptor<CharacterCustomization>(
+                predicate: #Predicate { $0.userId == userId }
+            )
+            if let customizations = try? context.fetch(customizationDesc) {
+                customizations.forEach(context.delete)
+            }
+
+            try context.save()
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
     }
 }

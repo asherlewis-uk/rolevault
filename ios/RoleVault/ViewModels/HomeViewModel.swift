@@ -13,12 +13,16 @@ final class HomeViewModel {
     var selectedCategory: CharacterCategory?
     var sortOption: CharacterStore.SortOption = .recentlyUpdated
 
-    /// Refreshes local character list from SwiftData.
+    /// Cached favorite character IDs for the current user to avoid O(N) fetches.
+    private var favoriteCharacterIds: Set<UUID> = []
+
+    /// Refreshes local character list from SwiftData and reloads favorite cache.
     /// Characters are the source of truth locally; no remote sync is performed.
     func refresh() async {
         isRefreshing = true
         do {
             _ = try await CharacterStore.shared.fetchAll()
+            await reloadFavoriteCache()
         } catch {
             await MainActor.run {
                 errorMessage = error.localizedDescription
@@ -39,8 +43,15 @@ final class HomeViewModel {
 
     @MainActor
     func toggleFavorite(_ character: Character) {
+        guard let userId = AuthService.shared.currentUser?.id else { return }
         do {
-            try CharacterStore.shared.toggleFavorite(character)
+            try CharacterStore.shared.toggleFavorite(characterId: character.id, userId: userId)
+            // Update local cache immediately
+            if favoriteCharacterIds.contains(character.id) {
+                favoriteCharacterIds.remove(character.id)
+            } else {
+                favoriteCharacterIds.insert(character.id)
+            }
         } catch {
             errorMessage = error.localizedDescription
             showError = true
@@ -48,12 +59,34 @@ final class HomeViewModel {
     }
 
     @MainActor
+    func isFavorite(_ character: Character) -> Bool {
+        favoriteCharacterIds.contains(character.id)
+    }
+
+    @MainActor
     func deleteCharacter(_ character: Character) {
         do {
             try CharacterStore.shared.delete(character)
+            favoriteCharacterIds.remove(character.id)
         } catch {
             errorMessage = error.localizedDescription
             showError = true
+        }
+    }
+
+    // MARK: - Private
+
+    @MainActor
+    private func reloadFavoriteCache() {
+        guard let userId = AuthService.shared.currentUser?.id else {
+            favoriteCharacterIds.removeAll()
+            return
+        }
+        do {
+            let customizations = try CharacterStore.shared.fetchAllCustomizations(for: userId)
+            favoriteCharacterIds = Set(customizations.filter { $0.isFavorite }.map(\.characterId))
+        } catch {
+            favoriteCharacterIds.removeAll()
         }
     }
 }

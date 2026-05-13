@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct ChatsGalleryView: View {
-    @Query(sort: \Conversation.lastMessageAt, order: .reverse) private var conversations: [Conversation]
-    @Query(sort: \GalleryMoment.createdAt, order: .reverse) private var moments: [GalleryMoment]
+    @State private var conversations: [Conversation] = []
+    @State private var moments: [GalleryMoment] = []
     @State private var segment: Segment = .chats
 
     enum Segment: String, CaseIterable {
@@ -32,6 +32,12 @@ struct ChatsGalleryView: View {
             }
         }
         .navigationTitle("Chats")
+        .task(id: AuthService.shared.currentUser?.id) {
+            await loadData()
+        }
+        .onAppear {
+            Task { await loadData() }
+        }
     }
 
     private var chatsList: some View {
@@ -77,12 +83,35 @@ struct ChatsGalleryView: View {
         withAnimation {
             SwiftDataContainer.shared.context.delete(convo)
             try? SwiftDataContainer.shared.context.save()
+            conversations.removeAll { $0.id == convo.id }
         }
     }
 
     private func characterFor(convo: Conversation) -> Character? {
         guard let characterId = convo.characterId else { return nil }
         return try? CharacterStore.shared.fetch(id: characterId)
+    }
+
+    @MainActor
+    private func loadData() async {
+        guard let userId = AuthService.shared.currentUser?.id else {
+            conversations = []
+            moments = []
+            return
+        }
+        let context = SwiftDataContainer.shared.context
+
+        let convoDescriptor = FetchDescriptor<Conversation>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.lastMessageAt, order: .reverse)]
+        )
+        conversations = (try? context.fetch(convoDescriptor)) ?? []
+
+        let momentDescriptor = FetchDescriptor<GalleryMoment>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        moments = (try? context.fetch(momentDescriptor)) ?? []
     }
 }
 

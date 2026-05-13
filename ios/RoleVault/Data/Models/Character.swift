@@ -8,9 +8,12 @@ final class Character {
     var name: String
     var subtitle: String
     var category: CharacterCategory
-    var isFavorite: Bool
     var awayMessage: String?
     var avatarData: Data?
+
+    // MARK: - Ownership
+    /// The user who created this character. Nil for legacy data or globally-shared imports.
+    var ownerUserId: UUID?
 
     // MARK: - Personality (deep construction)
     var backstory: String
@@ -31,13 +34,6 @@ final class Character {
     // MARK: - Metadata
     var createdAt: Date
     var updatedAt: Date
-
-    // MARK: - Relationships
-    @Relationship(deleteRule: .cascade, inverse: \JournalEntry.character)
-    var journalEntries: [JournalEntry]?
-
-    @Relationship(deleteRule: .nullify, inverse: \GalleryMoment.character)
-    var galleryMoments: [GalleryMoment]?
 
     // MARK: - Validation Constants
     static let backstoryMaxLength = 2500
@@ -62,7 +58,7 @@ final class Character {
         interactionMode: InteractionMode = .companion,
         dynamism: Double = 1.0,
         category: CharacterCategory = .assistant,
-        isFavorite: Bool = false,
+        ownerUserId: UUID? = nil,
         libreChatAgentId: String? = nil,
         awayMessage: String? = nil,
         avatarData: Data? = nil
@@ -80,7 +76,7 @@ final class Character {
         self.interactionMode = interactionMode
         self.dynamism = max(0.0, min(2.0, dynamism))
         self.category = category
-        self.isFavorite = isFavorite
+        self.ownerUserId = ownerUserId
         self.libreChatAgentId = libreChatAgentId
         self.awayMessage = awayMessage
         self.avatarData = avatarData
@@ -92,9 +88,10 @@ final class Character {
         updatedAt = Date()
     }
 
-    // MARK: - Computed Prompt
+    // MARK: - Computed Prompt (Base Values)
 
-    /// Combines all personality fields into a single system prompt string for LibreChat.
+    /// Combines all base personality fields into a single system prompt string for LibreChat.
+    /// To get the per-user effective prompt, use `CharacterStore.effectiveSystemPrompt(character:forUser:)`.
     var formattedSystemPrompt: String {
         var parts: [String] = []
 

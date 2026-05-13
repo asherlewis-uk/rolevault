@@ -13,7 +13,9 @@ final class SwiftDataContainer {
             GalleryMoment.self,
             JournalEntry.self,
             Conversation.self,
-            MessageWrapper.self
+            MessageWrapper.self,
+            UserAccount.self,
+            CharacterCustomization.self
         ])
         let config = ModelConfiguration(
             schema: schema,

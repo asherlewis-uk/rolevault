@@ -61,6 +61,7 @@ final class TokenInterceptor {
         try? KeychainManager.shared.deleteRefreshToken()
         await MainActor.run {
             AuthService.shared.isAuthenticated = false
+            AuthService.shared.currentUser = nil
         }
     }
 }
