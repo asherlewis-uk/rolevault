@@ -86,7 +86,8 @@ Go to **Settings → Secrets and variables → Actions** and add:
 | Secret | Description |
 |--------|-------------|
 | `APP_STORE_CONNECT_API_KEY` | JSON content of your App Store Connect API Key (Key ID, Issuer ID, private key) |
-| `MATCH_PASSWORD` | Passphrase for Fastlane Match (or your signing certificates repo) |
+| `MATCH_GIT_URL` | HTTPS or SSH URL of the private Git repo where Match stores certificates/profiles |
+| `MATCH_PASSWORD` | Passphrase for Fastlane Match encryption |
 | `APPLE_ID` | Your Apple ID email |
 | `TEAM_ID` | Apple Developer Team ID |
 | `ITC_TEAM_ID` | App Store Connect Team ID (if different) |

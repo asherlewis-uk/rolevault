@@ -46,7 +46,6 @@ platform :ios do
     match(
       type: "appstore",
       readonly: is_ci,
-      app_identifier: "com.rolevault.app",
       api_key: api_key
     )
 

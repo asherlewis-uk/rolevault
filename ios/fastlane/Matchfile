@@ -1,0 +1,11 @@
+storage_mode("git")
+
+git_url(ENV["MATCH_GIT_URL"]) if ENV["MATCH_GIT_URL"] && !ENV["MATCH_GIT_URL"].empty?
+
+type("appstore")
+
+app_identifier(["com.rolevault.app"])
+
+username(ENV["APPLE_ID"]) if ENV["APPLE_ID"] && !ENV["APPLE_ID"].empty?
+
+team_id(ENV["TEAM_ID"]) if ENV["TEAM_ID"] && !ENV["TEAM_ID"].empty?
