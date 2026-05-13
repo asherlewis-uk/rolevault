@@ -1,35 +1,42 @@
-name: Beta
+name: TestFlight Beta
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
 
 jobs:
-  build:
+  beta:
     runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: ios
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Ruby
+      - name: Verify Xcode & Swift
+        run: |
+          xcode-select -p
+          swift --version
+          xcodebuild -version
+
+      - name: Install Ruby & Bundler
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
           bundler-cache: true
-          working-directory: ios
 
-      - name: Generate Xcode Project
-        run: xcodegen generate
+      - name: Install dependencies
+        run: |
+          cd ios
+          bundle install
+          gem install xcodegen
+          xcodegen generate
 
-      - name: Fastlane Beta
-        run: bundle exec fastlane beta
+      - name: Build & Upload to TestFlight
         env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
           ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          cd ios
+          bundle exec fastlane beta
