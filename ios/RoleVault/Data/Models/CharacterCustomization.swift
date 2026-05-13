@@ -66,6 +66,8 @@ final class CharacterCustomization {
         updatedAt = Date()
     }
 
+    /// Computed convenience accessor for `interactionModeRaw`.
+    /// ⚠️ Not queryable via SwiftData `#Predicate`; use `interactionModeRaw` in predicates.
     var interactionMode: InteractionMode? {
         get {
             guard let raw = interactionModeRaw else { return nil }

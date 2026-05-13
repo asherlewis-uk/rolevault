@@ -40,6 +40,9 @@ struct PersonaManagerView: View {
         .sheet(isPresented: $showCreateSheet) {
             CreatePersonaSheet(onSave: loadPersonas)
         }
+        .task(id: AuthService.shared.currentUser?.id) {
+            loadPersonas()
+        }
         .onAppear {
             loadPersonas()
         }
@@ -107,6 +110,7 @@ struct CreatePersonaSheet: View {
     @State private var name: String = ""
     @State private var gender: String = ""
     @State private var backstory: String = ""
+    @State private var showError = false
     var onSave: (() -> Void)?
 
     var body: some View {
@@ -133,11 +137,20 @@ struct CreatePersonaSheet: View {
                     .disabled(name.isEmpty)
                 }
             }
+            .alert("Save Failed", isPresented: $showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("You must be signed in to create a persona.")
+            }
         }
     }
 
     private func save() {
-        let userId = AuthService.shared.currentUser?.id
+        guard let userId = AuthService.shared.currentUser?.id else {
+            HapticEngine.notification(.error)
+            showError = true
+            return
+        }
         let persona = Persona(
             name: name,
             gender: gender,
@@ -146,9 +159,14 @@ struct CreatePersonaSheet: View {
             userId: userId
         )
         SwiftDataContainer.shared.context.insert(persona)
-        try? SwiftDataContainer.shared.context.save()
-        HapticEngine.notification(.success)
-        onSave?()
-        dismiss()
+        do {
+            try SwiftDataContainer.shared.context.save()
+            HapticEngine.notification(.success)
+            onSave?()
+            dismiss()
+        } catch {
+            HapticEngine.notification(.error)
+            showError = true
+        }
     }
 }

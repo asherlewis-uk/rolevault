@@ -32,8 +32,11 @@ struct ChatsGalleryView: View {
             }
         }
         .navigationTitle("Chats")
-        .task {
+        .task(id: AuthService.shared.currentUser?.id) {
             await loadData()
+        }
+        .onAppear {
+            Task { await loadData() }
         }
     }
 
@@ -91,7 +94,11 @@ struct ChatsGalleryView: View {
 
     @MainActor
     private func loadData() async {
-        guard let userId = AuthService.shared.currentUser?.id else { return }
+        guard let userId = AuthService.shared.currentUser?.id else {
+            conversations = []
+            moments = []
+            return
+        }
         let context = SwiftDataContainer.shared.context
 
         let convoDescriptor = FetchDescriptor<Conversation>(

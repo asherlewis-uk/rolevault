@@ -13,10 +13,15 @@ final class ChatViewModel {
     // MARK: - Conversation Lifecycle
 
     func loadConversation(character: Character, persona: Persona?) async {
+        guard let userId = AuthService.shared.currentUser?.id else {
+            currentCharacterId = nil
+            currentPersonaId = nil
+            messages = []
+            return
+        }
+
         currentCharacterId = character.id
         currentPersonaId = persona?.id
-
-        guard let userId = AuthService.shared.currentUser?.id else { return }
 
         // Ensure a local Conversation record exists
         let localConvo = await ensureLocalConversation(character: character, persona: persona, userId: userId)

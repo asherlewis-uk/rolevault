@@ -83,9 +83,15 @@ struct ChatDetailView: View {
         .confirmationDialog("Switch Persona", isPresented: $showPersonaMenu, titleVisibility: .visible) {
             personaMenuActions
         }
-        .task {
+        .task(id: AuthService.shared.currentUser?.id) {
             loadPersonas()
             await viewModel.loadConversation(character: character, persona: activePersona)
+        }
+        .onAppear {
+            loadPersonas()
+            Task {
+                await viewModel.loadConversation(character: character, persona: activePersona)
+            }
         }
         .onChange(of: viewModel.messages) { old, new in
             animateNewMessages(old: old, new: new)
@@ -149,7 +155,11 @@ struct ChatDetailView: View {
         for p in personas {
             p.isActive = (p.id == persona.id)
         }
-        try? SwiftDataContainer.shared.context.save()
+        do {
+            try SwiftDataContainer.shared.context.save()
+        } catch {
+            // Best-effort save
+        }
     }
 
     private func scrollToBottom(proxy: ScrollViewProxy) {

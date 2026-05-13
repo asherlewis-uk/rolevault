@@ -13,13 +13,14 @@ struct EditCharacterSheet: View {
     @State private var awayMessage: String = ""
     @State private var isOwner: Bool = false
     @State private var showCustomizationNote: Bool = false
+    @State private var showSaveError = false
 
     var body: some View {
         NavigationStack {
             Form {
                 if showCustomizationNote {
                     Section {
-                        Text("This is a shared character. Your edits will be saved as a personal customization and will not affect the original character or other users.")
+                        Text("This is a shared character. Your edits will be saved as a personal customization and will not affect the original character or other users. Empty fields will use the base character's value.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -66,7 +67,7 @@ struct EditCharacterSheet: View {
             }
             .onAppear {
                 let currentUserId = AuthService.shared.currentUser?.id
-                isOwner = (character.ownerUserId == currentUserId)
+                isOwner = (character.ownerUserId == nil || character.ownerUserId == currentUserId)
                 showCustomizationNote = !isOwner
 
                 name = character.name
@@ -75,11 +76,21 @@ struct EditCharacterSheet: View {
                 background = character.backstory
                 awayMessage = character.awayMessage ?? ""
             }
+            .alert("Save Failed", isPresented: $showSaveError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Your changes could not be saved. Please try again.")
+            }
         }
     }
 
     private func save() {
-        guard let currentUserId = AuthService.shared.currentUser?.id else { return }
+        guard let currentUserId = AuthService.shared.currentUser?.id else {
+            HapticEngine.notification(.error)
+            return
+        }
+
+        var didSucceed = true
 
         if isOwner {
             // Edit the base character directly
@@ -89,7 +100,11 @@ struct EditCharacterSheet: View {
             character.backstory = background
             character.awayMessage = awayMessage.isEmpty ? nil : awayMessage
             character.touch()
-            try? SwiftDataContainer.shared.context.save()
+            do {
+                try SwiftDataContainer.shared.context.save()
+            } catch {
+                didSucceed = false
+            }
         } else {
             // Save as a per-user customization overlay
             do {
@@ -102,12 +117,17 @@ struct EditCharacterSheet: View {
                 customization.awayMessage = awayMessage.isEmpty ? nil : awayMessage
                 try CharacterStore.shared.updateCustomization(customization)
             } catch {
-                // Silently fail for now; in production we'd surface this error
+                didSucceed = false
             }
         }
 
-        HapticEngine.notification(.success)
-        dismiss()
+        if didSucceed {
+            HapticEngine.notification(.success)
+            dismiss()
+        } else {
+            HapticEngine.notification(.error)
+            showSaveError = true
+        }
     }
 
     private func refreshChat() {

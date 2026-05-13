@@ -146,7 +146,7 @@ Eight `@Model` classes are registered in `SwiftDataContainer`:
 - `JournalEntry` — trigger-keyphrase based memory entries scoped to a user + character
 - `GalleryMoment` — saved chat excerpts / screenshots scoped to a user
 
-**Delete rules**: `CharacterCustomization` uses `.cascade` for its dependent data.
+**Delete rules**: Referential integrity is managed manually. `CharacterStore.delete(_:)` explicitly fetches and deletes related `CharacterCustomization`, `JournalEntry`, `GalleryMoment`, `Conversation`, and `MessageWrapper` records. No automatic cascade behavior is configured in the SwiftData schema.
 **CloudKit**: explicitly disabled (`cloudKitDatabase: .none`).
 
 ### Data Model Boundaries

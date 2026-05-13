@@ -11,7 +11,7 @@ final class AuthService {
 
     private init() {
         self.isAuthenticated = (try? KeychainManager.shared.retrieveJWT()) != nil
-        Task { @MainActor in
+        if isAuthenticated {
             self.currentUser = try? fetchCurrentUser()
         }
     }
@@ -54,8 +54,10 @@ final class AuthService {
     /// Re-evaluate auth state from Keychain and reload current user.
     func checkAuth() {
         isAuthenticated = (try? KeychainManager.shared.retrieveJWT()) != nil
-        Task { @MainActor in
+        if isAuthenticated {
             currentUser = try? fetchCurrentUser()
+        } else {
+            currentUser = nil
         }
     }
 
@@ -102,7 +104,7 @@ final class AuthService {
         try? context.save()
         currentUser = account
 
-        // Migrate any legacy unscoped data to this user
+        // Migrate any legacy unscoped data to this user (once per device)
         await migrateUnscopedData(to: account)
     }
 
@@ -116,61 +118,66 @@ final class AuthService {
 
     // MARK: - Migration
 
+    private static let unscopedMigrationKey = "rolevault_unscoped_migration_completed"
+
     /// Assigns the current user's ID to any local data that lacks user scoping.
-    /// This runs once after login when transitioning from the old unscoped schema.
+    /// This runs once per device after the first login on the new scoped schema.
     @MainActor
     private func migrateUnscopedData(to user: UserAccount) async {
+        guard !UserDefaults.standard.bool(forKey: Self.unscopedMigrationKey) else { return }
+
         let context = SwiftDataContainer.shared.context
         let userId = user.id
 
         // Migrate Conversations
-        if let convos = try? context.fetch(FetchDescriptor<Conversation>()),
-           let unscoped = convos.filter({ $0.userId == nil }) as? [Conversation] {
+        if let convos = try? context.fetch(FetchDescriptor<Conversation>()) {
+            let unscoped = convos.filter { $0.userId == nil }
             for convo in unscoped {
                 convo.userId = userId
             }
         }
 
         // Migrate MessageWrappers
-        if let messages = try? context.fetch(FetchDescriptor<MessageWrapper>()),
-           let unscoped = messages.filter({ $0.userId == nil }) as? [MessageWrapper] {
+        if let messages = try? context.fetch(FetchDescriptor<MessageWrapper>()) {
+            let unscoped = messages.filter { $0.userId == nil }
             for msg in unscoped {
                 msg.userId = userId
             }
         }
 
         // Migrate Personas
-        if let personas = try? context.fetch(FetchDescriptor<Persona>()),
-           let unscoped = personas.filter({ $0.userId == nil }) as? [Persona] {
+        if let personas = try? context.fetch(FetchDescriptor<Persona>()) {
+            let unscoped = personas.filter { $0.userId == nil }
             for persona in unscoped {
                 persona.userId = userId
             }
         }
 
         // Migrate JournalEntries
-        if let journals = try? context.fetch(FetchDescriptor<JournalEntry>()),
-           let unscoped = journals.filter({ $0.userId == nil }) as? [JournalEntry] {
+        if let journals = try? context.fetch(FetchDescriptor<JournalEntry>()) {
+            let unscoped = journals.filter { $0.userId == nil }
             for entry in unscoped {
                 entry.userId = userId
             }
         }
 
         // Migrate GalleryMoments
-        if let moments = try? context.fetch(FetchDescriptor<GalleryMoment>()),
-           let unscoped = moments.filter({ $0.userId == nil }) as? [GalleryMoment] {
+        if let moments = try? context.fetch(FetchDescriptor<GalleryMoment>()) {
+            let unscoped = moments.filter { $0.userId == nil }
             for moment in unscoped {
                 moment.userId = userId
             }
         }
 
         // Migrate Character ownership
-        if let characters = try? context.fetch(FetchDescriptor<Character>()),
-           let unscoped = characters.filter({ $0.ownerUserId == nil }) as? [Character] {
+        if let characters = try? context.fetch(FetchDescriptor<Character>()) {
+            let unscoped = characters.filter { $0.ownerUserId == nil }
             for character in unscoped {
                 character.ownerUserId = userId
             }
         }
 
         try? context.save()
+        UserDefaults.standard.set(true, forKey: Self.unscopedMigrationKey)
     }
 }

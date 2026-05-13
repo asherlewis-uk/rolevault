@@ -38,8 +38,51 @@ final class CharacterStore {
 
     @MainActor
     func delete(_ character: Character) throws {
-        SwiftDataContainer.shared.context.delete(character)
-        try SwiftDataContainer.shared.context.save()
+        let context = SwiftDataContainer.shared.context
+        let charId = character.id
+
+        // Clean up per-user customizations
+        let custDesc = FetchDescriptor<CharacterCustomization>(
+            predicate: #Predicate { $0.characterId == charId }
+        )
+        if let customs = try? context.fetch(custDesc) {
+            customs.forEach(context.delete)
+        }
+
+        // Clean up journal entries
+        let journalDesc = FetchDescriptor<JournalEntry>(
+            predicate: #Predicate { $0.characterId == charId }
+        )
+        if let journals = try? context.fetch(journalDesc) {
+            journals.forEach(context.delete)
+        }
+
+        // Clean up conversations and their messages
+        let convoDesc = FetchDescriptor<Conversation>(
+            predicate: #Predicate { $0.characterId == charId }
+        )
+        if let convos = try? context.fetch(convoDesc) {
+            for convo in convos {
+                let msgDesc = FetchDescriptor<MessageWrapper>(
+                    predicate: #Predicate { $0.conversationId == convo.remoteId }
+                )
+                if let msgs = try? context.fetch(msgDesc) {
+                    msgs.forEach(context.delete)
+                }
+                context.delete(convo)
+            }
+        }
+
+        // Clean up gallery moments
+        let momentDesc = FetchDescriptor<GalleryMoment>(
+            predicate: #Predicate { $0.characterId == charId }
+        )
+        if let moments = try? context.fetch(momentDesc) {
+            moments.forEach(context.delete)
+        }
+
+        context.delete(character)
+        try context.save()
     }
 
     // MARK: - Search / Filter / Sort
@@ -66,6 +109,14 @@ final class CharacterStore {
             predicate: #Predicate { $0.characterId == characterId && $0.userId == userId }
         )
         return try SwiftDataContainer.shared.context.fetch(descriptor).first
+    }
+
+    @MainActor
+    func fetchAllCustomizations(for userId: UUID) throws -> [CharacterCustomization] {
+        let descriptor = FetchDescriptor<CharacterCustomization>(
+            predicate: #Predicate { $0.userId == userId }
+        )
+        return try SwiftDataContainer.shared.context.fetch(descriptor)
     }
 
     @MainActor
@@ -211,8 +262,8 @@ final class CharacterStore {
     // MARK: - Tavern V2 Export
 
     /// Exports a character to a PNG with embedded Tavern V2 JSON metadata.
-    func exportToPNG(character: Character, image: UIImage?) -> Data? {
-        let tavernJSON = buildTavernV2JSON(character: character)
+    func exportToPNG(character: Character, image: UIImage?, userId: UUID? = nil) -> Data? {
+        let tavernJSON = buildTavernV2JSON(character: character, userId: userId)
         let baseImage = image ?? placeholderImage(letter: String(character.name.prefix(1)))
         guard let pngData = baseImage.pngData() else { return nil }
         return embedPNGMetadata(pngData: pngData, key: "chara", value: tavernJSON)
@@ -228,7 +279,21 @@ final class CharacterStore {
 
     // MARK: - Tavern V2 JSON
 
-    private func buildTavernV2JSON(character: Character) -> String {
+    private func buildTavernV2JSON(character: Character, userId: UUID? = nil) -> String {
+        let entries: [[String: Any]]
+        if let uid = userId,
+           let journalEntries = try? fetchJournalEntries(characterId: character.id, userId: uid) {
+            entries = journalEntries.map { entry in
+                [
+                    "name": entry.triggerKeyphrase,
+                    "content": entry.content,
+                    "keys": [entry.triggerKeyphrase]
+                ]
+            }
+        } else {
+            entries = []
+        }
+
         let dict: [String: Any] = [
             "name": character.name,
             "description": character.subtitle,
@@ -244,7 +309,7 @@ final class CharacterStore {
             "system_prompt": character.formattedSystemPrompt,
             "post_history_instructions": character.responseDirective,
             "character_book": [
-                "entries": []
+                "entries": entries
             ]
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: dict, options: .prettyPrinted),
@@ -274,6 +339,23 @@ final class CharacterStore {
             ownerUserId: ownerUserId,
             avatarData: imageData
         )
+
+        // Parse journal entries from character_book if present
+        if let book = dict["character_book"] as? [String: Any],
+           let bookEntries = book["entries"] as? [[String: Any]] {
+            for entry in bookEntries {
+                if let key = entry["name"] as? String,
+                   let content = entry["content"] as? String {
+                    let journal = JournalEntry(
+                        characterId: character.id,
+                        triggerKeyphrase: key,
+                        content: content
+                    )
+                    SwiftDataContainer.shared.context.insert(journal)
+                }
+            }
+            try? SwiftDataContainer.shared.context.save()
+        }
 
         return character
     }

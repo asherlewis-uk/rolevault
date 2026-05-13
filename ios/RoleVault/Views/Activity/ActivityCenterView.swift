@@ -4,7 +4,7 @@ import SwiftData
 struct ActivityCenterView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @Query(sort: \Character.createdAt, order: .reverse) private var recentCharacters: [Character]
+    @State private var recentCharacters: [Character] = []
     @State private var recentConversations: [Conversation] = []
     @State private var recentMoments: [GalleryMoment] = []
 
@@ -66,15 +66,29 @@ struct ActivityCenterView: View {
                 }
             }
         }
-        .task {
+        .task(id: AuthService.shared.currentUser?.id) {
             await loadUserScopedData()
+        }
+        .onAppear {
+            Task { await loadUserScopedData() }
         }
     }
 
     @MainActor
     private func loadUserScopedData() async {
-        guard let userId = AuthService.shared.currentUser?.id else { return }
+        guard let userId = AuthService.shared.currentUser?.id else {
+            recentCharacters = []
+            recentConversations = []
+            recentMoments = []
+            return
+        }
         let context = SwiftDataContainer.shared.context
+
+        let charDescriptor = FetchDescriptor<Character>(
+            predicate: #Predicate { $0.ownerUserId == userId },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        recentCharacters = (try? context.fetch(charDescriptor)) ?? []
 
         let convoDescriptor = FetchDescriptor<Conversation>(
             predicate: #Predicate { $0.userId == userId },
