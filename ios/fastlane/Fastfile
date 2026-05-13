@@ -22,10 +22,15 @@ platform :ios do
 
     increment_build_number(xcodeproj: "RoleVault.xcodeproj")
 
+    match(
+      type: "appstore",
+      readonly: is_ci,
+      app_identifier: "com.rolevault.app"
+    )
+
     build_app(
       scheme: "RoleVault",
       export_method: "app-store",
-      xcargs: "-allowProvisioningUpdates",
       output_directory: "build"
     )
 
