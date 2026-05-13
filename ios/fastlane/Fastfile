@@ -1,91 +1,19 @@
-opt_out_usage
 default_platform(:ios)
-
-require 'json'
-
-# Parse APP_STORE_CONNECT_API_KEY from JSON string to the Hash that
-# match, build_app, and upload_to_testflight expect.
-def load_app_store_api_key
-  raw = ENV["APP_STORE_CONNECT_API_KEY"]
-  return nil if raw.nil? || raw.empty?
-
-  begin
-    JSON.parse(raw, symbolize_names: true)
-  rescue JSON::ParserError => e
-    UI.user_error!(
-      "APP_STORE_CONNECT_API_KEY is not valid JSON (#{e.message}). " \
-      "Store a JSON object with key_id, issuer_id, and key in the secret."
-    )
-  end
-end
-
-before_all do
-  # Ensure Swift is available and meets minimum requirements
-  swift_version = sh("swift", "--version", error_callback: ->(_cmd, _status, _output) {
-    UI.user_error!("Swift is not installed or not in PATH. Run ./setup-swiftly.sh first.")
-  })
-  UI.success("Swift toolchain verified:\n#{swift_version}")
-
-  # Verify xcodegen is available when needed
-  unless ENV['SKIP_XCODEGEN_CHECK']
-    sh("which", "xcodegen", error_callback: ->(_cmd, _status, _output) {
-      UI.important("xcodegen not found in PATH. Install via: brew install xcodegen")
-    })
-  end
-end
 
 platform :ios do
   desc "Build and upload to TestFlight"
   lane :beta do
-    unless is_ci
-      ensure_git_status_clean
-    end
-
+    setup_ci(force: true)
+    
     increment_build_number(xcodeproj: "RoleVault.xcodeproj")
-
-    api_key = load_app_store_api_key
-
-    setup_ci if is_ci
-
-    match(
-      type: "appstore",
-      readonly: is_ci,
-      force: ENV["MATCH_FORCE"] == "true",
-      api_key: api_key
-    )
-
-    profile_name = ENV["sigh_com.rolevault.app_appstore_profile-name"] || "match AppStore com.rolevault.app"
-
-    update_code_signing_settings(
-      use_automatic_signing: false,
-      path: "RoleVault.xcodeproj",
-      targets: ["RoleVault"],
-      team_id: ENV["TEAM_ID"],
-      bundle_identifier: "com.rolevault.app",
-      profile_name: profile_name,
-      code_sign_identity: "iPhone Distribution"
-    )
-
+    
+    match(type: "appstore", readonly: true)
+    
     build_app(
       scheme: "RoleVault",
-      export_method: "app-store",
-      output_directory: "build"
+      export_method: "app-store"
     )
-
-    upload_to_testflight(
-      skip_waiting_for_build_processing: true,
-      notify_external_testers: false,
-      api_key: api_key
-    )
-  end
-
-  desc "Build local debug IPA"
-  lane :build_debug do
-    build_app(
-      scheme: "RoleVault",
-      export_method: "development",
-      configuration: "Debug",
-      output_directory: "build"
-    )
+    
+    upload_to_testflight(skip_waiting_for_build_processing: true)
   end
 end
