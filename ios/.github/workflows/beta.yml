@@ -30,6 +30,13 @@ jobs:
           gem install xcodegen
           xcodegen generate
 
+      - name: Sync certificates
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          cd ios
+          bundle exec fastlane match appstore --readonly
+
       - name: Build & Upload to TestFlight
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
