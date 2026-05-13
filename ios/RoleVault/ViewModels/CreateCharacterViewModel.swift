@@ -91,8 +91,23 @@ final class CreateCharacterViewModel {
     @MainActor
     func save() async {
         let character = buildCharacter()
+        let userId = AuthService.shared.currentUser?.id
+
         do {
             try CharacterStore.shared.insert(character)
+
+            // Persist journal entries scoped to the creating user
+            if let currentUserId = userId {
+                for draft in journalEntries {
+                    let entry = JournalEntry(
+                        characterId: character.id,
+                        userId: currentUserId,
+                        triggerKeyphrase: draft.triggerKeyphrase,
+                        content: draft.memory
+                    )
+                    try CharacterStore.shared.insertJournalEntry(entry)
+                }
+            }
 
             if createLibreChatAgent {
                 do {
@@ -114,6 +129,7 @@ final class CreateCharacterViewModel {
     // MARK: - Private
 
     private func buildCharacter() -> Character {
+        let ownerUserId = AuthService.shared.currentUser?.id
         let character = Character(
             name: name,
             subtitle: subtitle,
@@ -127,18 +143,9 @@ final class CreateCharacterViewModel {
             interactionMode: interactionMode,
             dynamism: dynamism,
             category: category,
+            ownerUserId: ownerUserId,
             avatarData: avatarData
         )
-
-        for draft in journalEntries {
-            let entry = JournalEntry(
-                characterId: character.id,
-                triggerKeyphrase: draft.triggerKeyphrase,
-                content: draft.memory
-            )
-            character.journalEntries?.append(entry)
-        }
-
         return character
     }
 

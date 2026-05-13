@@ -16,8 +16,10 @@ final class ChatViewModel {
         currentCharacterId = character.id
         currentPersonaId = persona?.id
 
+        guard let userId = AuthService.shared.currentUser?.id else { return }
+
         // Ensure a local Conversation record exists
-        let localConvo = await ensureLocalConversation(character: character, persona: persona)
+        let localConvo = await ensureLocalConversation(character: character, persona: persona, userId: userId)
 
         do {
             let convos = try await ChatService.shared.fetchConversations()
@@ -30,14 +32,14 @@ final class ChatViewModel {
                 await MainActor.run {
                     self.messages = msgs
                     for msg in msgs {
-                        self.cacheMessage(msg, conversationId: convo.id)
+                        self.cacheMessage(msg, conversationId: convo.id, userId: userId)
                     }
                 }
             }
         } catch {
             // Fallback to cached messages if remote fails
             if let local = localConvo {
-                let cached = await loadCachedMessages(conversationId: local.remoteId)
+                let cached = await loadCachedMessages(conversationId: local.remoteId, userId: userId)
                 await MainActor.run {
                     self.messages = cached
                 }
@@ -50,6 +52,7 @@ final class ChatViewModel {
 
     func sendMessage(_ text: String, character: Character, persona: Persona?) async {
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        guard let userId = AuthService.shared.currentUser?.id else { return }
         isTyping = true
         defer { isTyping = false }
 
@@ -66,12 +69,12 @@ final class ChatViewModel {
 
         // Cache user message locally
         if let convoId = currentConversationId {
-            await cacheMessage(userMessage, conversationId: convoId)
-            await updateConversationPreview(conversationId: convoId, preview: text)
+            await cacheMessage(userMessage, conversationId: convoId, userId: userId)
+            await updateConversationPreview(conversationId: convoId, preview: text, userId: userId)
         }
 
-        let journals = triggeredJournalEntries(character: character, userMessage: text)
-        let systemPrompt = buildSystemPrompt(character: character, persona: persona, triggeredJournals: journals)
+        let journals = await triggeredJournalEntries(character: character, userMessage: text, userId: userId)
+        let systemPrompt = await buildSystemPrompt(character: character, persona: persona, triggeredJournals: journals, userId: userId)
 
         let characterName = character.name
         let assistantId = UUID().uuidString
@@ -118,8 +121,8 @@ final class ChatViewModel {
             // Cache final assistant message
             if let finalMessage = messages.first(where: { $0.id == assistantId }) {
                 if let convoId = currentConversationId {
-                    await cacheMessage(finalMessage, conversationId: convoId)
-                    await updateConversationPreview(conversationId: convoId, preview: finalMessage.text)
+                    await cacheMessage(finalMessage, conversationId: convoId, userId: userId)
+                    await updateConversationPreview(conversationId: convoId, preview: finalMessage.text, userId: userId)
                 }
             }
         } catch {
@@ -140,9 +143,10 @@ final class ChatViewModel {
 
     // MARK: - Prompt Building
 
-    private func buildSystemPrompt(character: Character, persona: Persona?, triggeredJournals: [JournalEntry]) -> String {
+    @MainActor
+    private func buildSystemPrompt(character: Character, persona: Persona?, triggeredJournals: [JournalEntry], userId: UUID) -> String {
         var parts: [String] = []
-        parts.append(character.formattedSystemPrompt)
+        parts.append(CharacterStore.shared.effectiveSystemPrompt(character: character, userId: userId))
 
         if let persona = persona {
             parts.append(persona.formattedUserContext)
@@ -155,8 +159,9 @@ final class ChatViewModel {
         return parts.joined(separator: "\n\n")
     }
 
-    private func triggeredJournalEntries(character: Character, userMessage: String) -> [JournalEntry] {
-        guard let entries = character.journalEntries else { return [] }
+    @MainActor
+    private func triggeredJournalEntries(character: Character, userMessage: String, userId: UUID) -> [JournalEntry] {
+        guard let entries = try? CharacterStore.shared.fetchJournalEntries(characterId: character.id, userId: userId) else { return [] }
         return entries.filter { $0.isTriggered(by: userMessage) }
     }
 
@@ -173,8 +178,10 @@ final class ChatViewModel {
 
     @MainActor
     func saveGalleryMoment(message: LibreChatMessage, conversationId: String, character: Character) {
+        guard let userId = AuthService.shared.currentUser?.id else { return }
         let moment = GalleryMoment(
             characterId: character.id,
+            userId: userId,
             conversationId: conversationId,
             textExcerpt: message.text,
             caption: "Moment with \(character.name)"
@@ -204,11 +211,11 @@ final class ChatViewModel {
     // MARK: - Local Persistence Helpers
 
     @MainActor
-    private func ensureLocalConversation(character: Character, persona: Persona?) -> Conversation? {
+    private func ensureLocalConversation(character: Character, persona: Persona?, userId: UUID) -> Conversation? {
         let context = SwiftDataContainer.shared.context
         let charId: UUID? = character.id
         let descriptor = FetchDescriptor<Conversation>(
-            predicate: #Predicate { $0.characterId == charId }
+            predicate: #Predicate { $0.characterId == charId && $0.userId == userId }
         )
         if let existing = try? context.fetch(descriptor).first {
             return existing
@@ -219,6 +226,7 @@ final class ChatViewModel {
             title: character.name,
             characterId: character.id,
             personaId: persona?.id,
+            userId: userId,
             syncStatus: .pending
         )
         context.insert(convo)
@@ -235,10 +243,10 @@ final class ChatViewModel {
     }
 
     @MainActor
-    private func updateConversationPreview(conversationId: String, preview: String) {
+    private func updateConversationPreview(conversationId: String, preview: String, userId: UUID) {
         let context = SwiftDataContainer.shared.context
         let descriptor = FetchDescriptor<Conversation>(
-            predicate: #Predicate { $0.remoteId == conversationId }
+            predicate: #Predicate { $0.remoteId == conversationId && $0.userId == userId }
         )
         if let convo = try? context.fetch(descriptor).first {
             convo.lastMessagePreview = preview
@@ -248,24 +256,24 @@ final class ChatViewModel {
     }
 
     @MainActor
-    private func cacheMessage(_ message: LibreChatMessage, conversationId: String) {
+    private func cacheMessage(_ message: LibreChatMessage, conversationId: String, userId: UUID) {
         let context = SwiftDataContainer.shared.context
         let descriptor = FetchDescriptor<MessageWrapper>(
-            predicate: #Predicate { $0.id == message.id && $0.conversationId == conversationId }
+            predicate: #Predicate { $0.id == message.id && $0.conversationId == conversationId && $0.userId == userId }
         )
         if (try? context.fetch(descriptor).first) != nil {
             return // Already cached
         }
-        let wrapper = MessageWrapper(message: message, conversationId: conversationId)
+        let wrapper = MessageWrapper(message: message, conversationId: conversationId, userId: userId)
         context.insert(wrapper)
         try? context.save()
     }
 
     @MainActor
-    private func loadCachedMessages(conversationId: String) -> [LibreChatMessage] {
+    private func loadCachedMessages(conversationId: String, userId: UUID) -> [LibreChatMessage] {
         let context = SwiftDataContainer.shared.context
         let descriptor = FetchDescriptor<MessageWrapper>(
-            predicate: #Predicate { $0.conversationId == conversationId },
+            predicate: #Predicate { $0.conversationId == conversationId && $0.userId == userId },
             sortBy: [SortDescriptor(\.createdAt)]
         )
         guard let wrappers = try? context.fetch(descriptor) else { return [] }

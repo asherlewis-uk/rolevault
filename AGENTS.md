@@ -136,16 +136,37 @@ The app uses lightweight static singletons, not a protocol-based DI container:
 `DependencyContainer` is an enum that simply aliases these shared instances. Changing to protocol injection would require updating all ViewModels.
 
 ### SwiftData Schema
-Six `@Model` classes are registered in `SwiftDataContainer`:
-- `Character` — role-play characters with personality fields, categories, journal entries, gallery moments
+Eight `@Model` classes are registered in `SwiftDataContainer`:
+- `Character` — shared canonical role-play characters with base personality fields and categories
+- `CharacterCustomization` — per-user overlay on a `Character` (overrides, favorites, local tweaks)
+- `UserAccount` — local representation of the authenticated LibreChat user (`isCurrent` flag)
 - `Persona` — user identity profiles; one can be `isActive` at a time
 - `Conversation` — local cache of remote LibreChat conversations (`remoteId` maps to server ID)
 - `MessageWrapper` — local cache of chat messages
-- `JournalEntry` — trigger-keyphrase based memory entries linked to a character
-- `GalleryMoment` — saved chat excerpts / screenshots
+- `JournalEntry` — trigger-keyphrase based memory entries scoped to a user + character
+- `GalleryMoment` — saved chat excerpts / screenshots scoped to a user
 
-**Delete rules**: `JournalEntry` uses `.cascade` on Character; `GalleryMoment` uses `.nullify`.
+**Delete rules**: `CharacterCustomization` uses `.cascade` for its dependent data.
 **CloudKit**: explicitly disabled (`cloudKitDatabase: .none`).
+
+### Data Model Boundaries
+The architecture enforces strict separation between shared and user-scoped data:
+
+| Entity | Scope | Notes |
+|--------|-------|-------|
+| `Character` | Shared/global pool | `ownerUserId` tracks who created the base character; all users can see and use it |
+| `CharacterCustomization` | Per-user | Overlay on a shared character; stores personality overrides, `isFavorite`, etc. |
+| `Conversation` | Per-user | `userId` isolates chat history per account |
+| `MessageWrapper` | Per-user | `userId` isolates cached messages per account |
+| `JournalEntry` | Per-user | `userId` + `characterId`; memories are private to each user |
+| `GalleryMoment` | Per-user | `userId` + `characterId`; gallery is private to each user |
+| `Persona` | Per-user | `userId` isolates personas per account |
+| `UserAccount` | One per remote user | `isCurrent` flag indicates the active session |
+
+- **Base character = shared canonical entity**. Personality fields live on `Character`.
+- **Per-user customization layer = local override**. `CharacterCustomization` stores optional overrides for every personality field. When nil, the base character value is used.
+- **Chats/memory = isolated per user**. Conversations, messages, journal entries, and gallery moments are always filtered by the current user's ID.
+- **Ownership vs usage**. `Character.ownerUserId` determines edit permissions on the base. Non-owners who edit a character receive a `CharacterCustomization` instead, leaving the shared base untouched.
 
 ### Networking Patterns
 - `LibreChatAPI` builds `URLRequest` objects and executes via `URLSession`.
@@ -158,10 +179,12 @@ Six `@Model` classes are registered in `SwiftDataContainer`:
 ### Auth Flow
 1. `AuthService.login(email:password)` → `POST /api/auth/login`
 2. Save JWT + refresh token to Keychain (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`)
-3. All requests read JWT from Keychain via `LibreChatAPI.buildRequest`
-4. On 401 → `TokenInterceptor` calls `GET /api/auth/refresh?retry=true` with refresh token
-5. On refresh failure → clears Keychain, sets `AuthService.isAuthenticated = false`
-6. Logout calls `POST /api/auth/logout` (best-effort), then deletes Keychain tokens
+3. Persist or update a `UserAccount` from the `LibreChatUser` in the response; set `isCurrent = true`
+4. Migrate any legacy unscoped data (records with `userId == nil` or `ownerUserId == nil`) to the newly-authenticated user
+5. All requests read JWT from Keychain via `LibreChatAPI.buildRequest`
+6. On 401 → `TokenInterceptor` calls `GET /api/auth/refresh?retry=true` with refresh token
+7. On refresh failure → clears Keychain, sets `AuthService.isAuthenticated = false`, clears `AuthService.currentUser`
+8. Logout calls `POST /api/auth/logout` (best-effort), then deletes Keychain tokens and clears current user
 
 ## Key Conventions
 
@@ -183,10 +206,12 @@ Six `@Model` classes are registered in `SwiftDataContainer`:
 - `MeshGradient` + `TimelineView` powers the animated aurora background with time-of-day palettes
 
 ### Character / Prompt Building
-- `Character.formattedSystemPrompt` assembles all personality fields into a single block of text sent to LibreChat as `instructions`
+- `Character.formattedSystemPrompt` assembles the **base** personality fields into a single block of text
+- `CharacterStore.effectiveSystemPrompt(character:userId:)` merges the base character with the current user's `CharacterCustomization` overrides to produce the prompt actually sent to LibreChat
 - `Persona.formattedUserContext` injects user identity into the same prompt stack
 - `JournalEntry.isTriggered(by:)` checks if a user message contains the trigger keyphrase (case-insensitive) and injects the memory content into the prompt
-- `AgentService` can create/update/delete LibreChat agents from a `Character`
+- `CharacterStore.fetchJournalEntries(characterId:userId:)` returns only the current user's journal entries for a character
+- `AgentService` can create/update/delete LibreChat agents from a `Character` (agents represent the shared base, not a customization)
 
 ### Data Import / Export
 - `CharacterStore` supports **Tavern V2** character import/export via PNG metadata (`chara` key in `kCGImagePropertyPNGDictionary`)

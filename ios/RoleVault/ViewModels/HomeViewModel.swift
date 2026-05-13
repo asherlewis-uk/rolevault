@@ -39,12 +39,19 @@ final class HomeViewModel {
 
     @MainActor
     func toggleFavorite(_ character: Character) {
+        guard let userId = AuthService.shared.currentUser?.id else { return }
         do {
-            try CharacterStore.shared.toggleFavorite(character)
+            try CharacterStore.shared.toggleFavorite(characterId: character.id, userId: userId)
         } catch {
             errorMessage = error.localizedDescription
             showError = true
         }
+    }
+
+    @MainActor
+    func isFavorite(_ character: Character) -> Bool {
+        guard let userId = AuthService.shared.currentUser?.id else { return false }
+        return CharacterStore.shared.effectiveIsFavorite(character: character, userId: userId)
     }
 
     @MainActor

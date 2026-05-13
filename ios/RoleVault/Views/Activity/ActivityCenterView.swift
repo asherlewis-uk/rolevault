@@ -5,8 +5,8 @@ struct ActivityCenterView: View {
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \Character.createdAt, order: .reverse) private var recentCharacters: [Character]
-    @Query(sort: \GalleryMoment.createdAt, order: .reverse) private var recentMoments: [GalleryMoment]
-    @Query(sort: \Conversation.lastMessageAt, order: .reverse) private var recentConversations: [Conversation]
+    @State private var recentConversations: [Conversation] = []
+    @State private var recentMoments: [GalleryMoment] = []
 
     var events: [ActivityEvent] {
         var items: [ActivityEvent] = []
@@ -66,6 +66,27 @@ struct ActivityCenterView: View {
                 }
             }
         }
+        .task {
+            await loadUserScopedData()
+        }
+    }
+
+    @MainActor
+    private func loadUserScopedData() async {
+        guard let userId = AuthService.shared.currentUser?.id else { return }
+        let context = SwiftDataContainer.shared.context
+
+        let convoDescriptor = FetchDescriptor<Conversation>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.lastMessageAt, order: .reverse)]
+        )
+        recentConversations = (try? context.fetch(convoDescriptor)) ?? []
+
+        let momentDescriptor = FetchDescriptor<GalleryMoment>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        recentMoments = (try? context.fetch(momentDescriptor)) ?? []
     }
 }
 

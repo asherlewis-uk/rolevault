@@ -9,6 +9,7 @@ final class Persona {
     var backstory: String
     var avatarData: Data?
     var isActive: Bool
+    var userId: UUID?
     var createdAt: Date
     var updatedAt: Date
 
@@ -18,7 +19,8 @@ final class Persona {
         gender: String = "",
         backstory: String = "",
         avatarData: Data? = nil,
-        isActive: Bool = false
+        isActive: Bool = false,
+        userId: UUID? = nil
     ) {
         self.id = id
         self.name = name
@@ -26,6 +28,7 @@ final class Persona {
         self.backstory = backstory
         self.avatarData = avatarData
         self.isActive = isActive
+        self.userId = userId
         self.createdAt = Date()
         self.updatedAt = Date()
     }

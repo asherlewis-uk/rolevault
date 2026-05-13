@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct PersonaManagerView: View {
-    @Query(sort: \Persona.updatedAt, order: .reverse) private var personas: [Persona]
+    @State private var personas: [Persona] = []
     @State private var showCreateSheet = false
 
     var body: some View {
@@ -20,6 +20,7 @@ struct PersonaManagerView: View {
                         SwiftDataContainer.shared.context.delete(personas[index])
                     }
                     try? SwiftDataContainer.shared.context.save()
+                    loadPersonas()
                 }
             }
             .listStyle(.plain)
@@ -37,8 +38,24 @@ struct PersonaManagerView: View {
             }
         }
         .sheet(isPresented: $showCreateSheet) {
-            CreatePersonaSheet()
+            CreatePersonaSheet(onSave: loadPersonas)
         }
+        .onAppear {
+            loadPersonas()
+        }
+    }
+
+    @MainActor
+    private func loadPersonas() {
+        guard let userId = AuthService.shared.currentUser?.id else {
+            personas = []
+            return
+        }
+        let descriptor = FetchDescriptor<Persona>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
+        )
+        personas = (try? SwiftDataContainer.shared.context.fetch(descriptor)) ?? []
     }
 }
 
@@ -90,6 +107,7 @@ struct CreatePersonaSheet: View {
     @State private var name: String = ""
     @State private var gender: String = ""
     @State private var backstory: String = ""
+    var onSave: (() -> Void)?
 
     var body: some View {
         NavigationStack {
@@ -119,15 +137,18 @@ struct CreatePersonaSheet: View {
     }
 
     private func save() {
+        let userId = AuthService.shared.currentUser?.id
         let persona = Persona(
             name: name,
             gender: gender,
             backstory: backstory,
-            isActive: false
+            isActive: false,
+            userId: userId
         )
         SwiftDataContainer.shared.context.insert(persona)
         try? SwiftDataContainer.shared.context.save()
         HapticEngine.notification(.success)
+        onSave?()
         dismiss()
     }
 }
