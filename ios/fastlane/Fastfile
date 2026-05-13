@@ -1,4 +1,23 @@
+opt_out_usage
 default_platform(:ios)
+
+require 'json'
+
+# Parse APP_STORE_CONNECT_API_KEY from JSON string to the Hash that
+# match, build_app, and upload_to_testflight expect.
+def load_app_store_api_key
+  raw = ENV["APP_STORE_CONNECT_API_KEY"]
+  return nil if raw.nil? || raw.empty?
+
+  begin
+    JSON.parse(raw, symbolize_names: true)
+  rescue JSON::ParserError => e
+    UI.user_error!(
+      "APP_STORE_CONNECT_API_KEY is not valid JSON (#{e.message}). " \
+      "Store a JSON object with key_id, issuer_id, and key in the secret."
+    )
+  end
+end
 
 before_all do
   # Ensure Swift is available and meets minimum requirements
@@ -22,10 +41,13 @@ platform :ios do
 
     increment_build_number(xcodeproj: "RoleVault.xcodeproj")
 
+    api_key = load_app_store_api_key
+
     match(
       type: "appstore",
       readonly: is_ci,
-      app_identifier: "com.rolevault.app"
+      app_identifier: "com.rolevault.app",
+      api_key: api_key
     )
 
     build_app(
@@ -36,7 +58,8 @@ platform :ios do
 
     upload_to_testflight(
       skip_waiting_for_build_processing: true,
-      notify_external_testers: false
+      notify_external_testers: false,
+      api_key: api_key
     )
   end
 
