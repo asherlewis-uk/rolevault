@@ -46,6 +46,7 @@ platform :ios do
     match(
       type: "appstore",
       readonly: is_ci,
+      force: ENV["MATCH_FORCE"] == "true",
       api_key: api_key
     )
 

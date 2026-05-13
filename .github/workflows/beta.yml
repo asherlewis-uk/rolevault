@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      force_match:
+        description: 'Force Match to regenerate provisioning profiles'
+        required: false
+        default: false
+        type: boolean
 
 env:
   LC_ALL: en_US.UTF-8
@@ -67,6 +74,7 @@ jobs:
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_FORCE: ${{ inputs.force_match && 'true' || 'false' }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
