@@ -1,0 +1,79 @@
+name: RoleVault
+options:
+  bundleIdPrefix: com.rolevault
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "16.0"
+  developmentLanguage: en
+  generateEmptyDirectories: true
+  groupSortPosition: top
+
+targets:
+  RoleVault:
+    type: application
+    platform: iOS
+    sources:
+      - path: RoleVault
+      - path: Shared
+    resources:
+      - path: RoleVault/Assets.xcassets
+      - path: RoleVault/Preview Content
+    settings:
+      base:
+        INFOPLIST_FILE: RoleVault/Info.plist
+        CODE_SIGN_ENTITLEMENTS: RoleVault/RoleVault.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.rolevault.app
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    info:
+      path: RoleVault/Info.plist
+      properties:
+        CFBundleDisplayName: RoleVault
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UIRequiredDeviceCapabilities:
+          - armv7
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UILaunchScreen:
+          UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSCameraUsageDescription: "RoleVault uses the camera to set character and persona avatars."
+        NSPhotoLibraryUsageDescription: "RoleVault accesses photos to set character and persona avatars."
+        NSSupportsLiveActivities: true
+    entitlements:
+      path: RoleVault/RoleVault.entitlements
+      properties:
+        aps-environment: development
+        com.apple.developer.live-activities: true
+
+  RoleVaultTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: RoleVaultTests
+    dependencies:
+      - target: RoleVault
+
+  RoleVaultUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: RoleVaultUITests
+    dependencies:
+      - target: RoleVault
+
+schemes:
+  RoleVault:
+    build:
+      targets:
+        RoleVault: all
+    test:
+      targets:
+        - name: RoleVaultTests
+        - name: RoleVaultUITests
+      gatherCoverageData: true
