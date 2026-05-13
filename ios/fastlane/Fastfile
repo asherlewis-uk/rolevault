@@ -1,5 +1,20 @@
 default_platform(:ios)
 
+before_all do
+  # Ensure Swift is available and meets minimum requirements
+  swift_version = sh("swift", "--version", error_callback: ->(_cmd, _status, _output) {
+    UI.user_error!("Swift is not installed or not in PATH. Run ./setup-swiftly.sh first.")
+  })
+  UI.success("Swift toolchain verified:\n#{swift_version}")
+
+  # Verify xcodegen is available when needed
+  unless ENV['SKIP_XCODEGEN_CHECK']
+    sh("which", "xcodegen", error_callback: ->(_cmd, _status, _output) {
+      UI.important("xcodegen not found in PATH. Install via: brew install xcodegen")
+    })
+  end
+end
+
 platform :ios do
   desc "Build and upload to TestFlight"
   lane :beta do

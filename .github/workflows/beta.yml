@@ -1,0 +1,77 @@
+name: Beta Build & TestFlight
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  LC_ALL: en_US.UTF-8
+  LANG: en_US.UTF-8
+
+jobs:
+  beta:
+    name: Build and Upload to TestFlight
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Swift toolchain
+        run: |
+          chmod +x ./setup-swiftly.sh
+          ./setup-swiftly.sh
+
+      - name: Add swiftly to PATH
+        run: |
+          echo "${HOME}/.swiftly/bin" >> "$GITHUB_PATH"
+          if [[ -f "${HOME}/.swiftly/env.sh" ]]; then
+            # shellcheck source=/dev/null
+            source "${HOME}/.swiftly/env.sh"
+          fi
+
+      - name: Verify Swift version
+        run: swift --version
+
+      - name: Verify Xcode path
+        run: |
+          echo "Xcode path: $(xcode-select -p)"
+          xcodebuild -version
+
+      - name: Cache Ruby gems
+        uses: actions/cache@v4
+        with:
+          path: ios/vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('ios/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install Ruby dependencies
+        working-directory: ios
+        run: |
+          gem install bundler --no-document
+          bundle config path vendor/bundle
+          bundle install --jobs 4 --retry 3
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: |
+          if command -v xcodegen &> /dev/null; then
+            xcodegen generate
+          else
+            echo "⚠️ xcodegen not found. Attempting brew install..."
+            brew install xcodegen
+            xcodegen generate
+          fi
+
+      - name: Run Fastlane beta
+        working-directory: ios
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+        run: bundle exec fastlane beta
