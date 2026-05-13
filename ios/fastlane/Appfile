@@ -1,4 +1,4 @@
 app_identifier("com.rolevault.app")
-apple_id(ENV["APPLE_ID"] || "your-apple-id@example.com")
-itc_team_id(ENV["ITC_TEAM_ID"] || "")
-team_id(ENV["TEAM_ID"] || "")
+apple_id("admin@asherlewis.uk")
+team_id("S58MT4ATKM")
+itc_team_id("S58MT4ATKM")
