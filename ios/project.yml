@@ -2,22 +2,21 @@ name: RoleVault
 options:
   bundleIdPrefix: com.rolevault
   deploymentTarget:
-    iOS: "18.0"
-  xcodeVersion: "16.0"
+    iOS: '18.0'
+  xcodeVersion: '16.0'
   developmentLanguage: en
   generateEmptyDirectories: true
   groupSortPosition: top
-
 targets:
   RoleVault:
     type: application
     platform: iOS
     sources:
-      - path: RoleVault
-      - path: Shared
+    - path: RoleVault
+    - path: Shared
     resources:
-      - path: RoleVault/Assets.xcassets
-      - path: RoleVault/Preview Content
+    - path: RoleVault/Assets.xcassets
+    - path: RoleVault/Preview Content
     settings:
       base:
         INFOPLIST_FILE: RoleVault/Info.plist
@@ -25,48 +24,51 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rolevault.app
         MARKETING_VERSION: 1.0.0
         CURRENT_PROJECT_VERSION: 1
-        SWIFT_VERSION: "5.9"
-        TARGETED_DEVICE_FAMILY: "1"
-        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+        SWIFT_VERSION: '5.9'
+        TARGETED_DEVICE_FAMILY: '1'
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: true
+        DEVELOPMENT_TEAM: S58MT4ATKM
+        CODE_SIGN_STYLE: Manual
+        PROVISIONING_PROFILE_SPECIFIER: match AppStore com.rolevault.app
+        CODE_SIGN_IDENTITY: Apple Distribution
     info:
       path: RoleVault/Info.plist
       properties:
         CFBundleDisplayName: RoleVault
-        CFBundleShortVersionString: "$(MARKETING_VERSION)"
-        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UIRequiredDeviceCapabilities:
-          - armv7
+        - armv7
         UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
+        - UIInterfaceOrientationPortrait
         UILaunchScreen:
           UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
-        NSCameraUsageDescription: "RoleVault uses the camera to set character and persona avatars."
-        NSPhotoLibraryUsageDescription: "RoleVault accesses photos to set character and persona avatars."
+        NSCameraUsageDescription: RoleVault uses the camera to set character and persona
+          avatars.
+        NSPhotoLibraryUsageDescription: RoleVault accesses photos to set character
+          and persona avatars.
         NSSupportsLiveActivities: true
     entitlements:
       path: RoleVault/RoleVault.entitlements
       properties:
         aps-environment: development
         com.apple.developer.live-activities: true
-
   RoleVaultTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: RoleVaultTests
+    - path: RoleVaultTests
     dependencies:
-      - target: RoleVault
-
+    - target: RoleVault
   RoleVaultUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - path: RoleVaultUITests
+    - path: RoleVaultUITests
     dependencies:
-      - target: RoleVault
-
+    - target: RoleVault
 schemes:
   RoleVault:
     build:
@@ -74,6 +76,6 @@ schemes:
         RoleVault: all
     test:
       targets:
-        - name: RoleVaultTests
-        - name: RoleVaultUITests
+      - name: RoleVaultTests
+      - name: RoleVaultUITests
       gatherCoverageData: true
