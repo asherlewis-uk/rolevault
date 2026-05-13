@@ -49,6 +49,17 @@ platform :ios do
       api_key: api_key
     )
 
+    profile_name = ENV["sigh_com.rolevault.app_appstore_profile-name"] || "match AppStore com.rolevault.app"
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "RoleVault.xcodeproj",
+      team_id: ENV["TEAM_ID"],
+      bundle_identifier: "com.rolevault.app",
+      profile_name: profile_name,
+      code_sign_identity: "iPhone Distribution"
+    )
+
     build_app(
       scheme: "RoleVault",
       export_method: "app-store",
