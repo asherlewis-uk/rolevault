@@ -5,7 +5,11 @@ platform :ios do
   lane :beta do
     setup_ci(force: true)
     
-    increment_build_number(xcodeproj: "RoleVault.xcodeproj")
+    if is_ci
+      increment_build_number(build_number: ENV["GITHUB_RUN_NUMBER"], xcodeproj: "RoleVault.xcodeproj")
+    else
+      increment_build_number(xcodeproj: "RoleVault.xcodeproj")
+    end
     
     match(type: "appstore", readonly: true)
     
