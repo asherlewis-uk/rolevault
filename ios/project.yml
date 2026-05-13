@@ -45,16 +45,16 @@ targets:
           UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
+        UIBackgroundModes:
+        - remote-notification
         NSCameraUsageDescription: RoleVault uses the camera to set character and persona
           avatars.
         NSPhotoLibraryUsageDescription: RoleVault accesses photos to set character
           and persona avatars.
-        NSSupportsLiveActivities: true
     entitlements:
       path: RoleVault/RoleVault.entitlements
       properties:
         aps-environment: development
-        com.apple.developer.live-activities: true
   RoleVaultTests:
     type: bundle.unit-test
     platform: iOS
