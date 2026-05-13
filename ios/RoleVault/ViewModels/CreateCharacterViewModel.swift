@@ -103,7 +103,8 @@ final class CreateCharacterViewModel {
                         characterId: character.id,
                         userId: currentUserId,
                         triggerKeyphrase: draft.triggerKeyphrase,
-                        content: draft.memory
+                        content: draft.memory,
+                        character: character
                     )
                     try CharacterStore.shared.insertJournalEntry(entry)
                 }

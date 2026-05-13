@@ -12,7 +12,10 @@ final class AuthService {
     private init() {
         self.isAuthenticated = (try? KeychainManager.shared.retrieveJWT()) != nil
         if isAuthenticated {
-            self.currentUser = try? fetchCurrentUser()
+            // AuthService is a singleton first accessed from SwiftUI/AppDelegate (main thread).
+            self.currentUser = MainActor.assumeIsolated {
+                try? fetchCurrentUser()
+            }
         }
     }
 
@@ -52,6 +55,7 @@ final class AuthService {
     }
 
     /// Re-evaluate auth state from Keychain and reload current user.
+    @MainActor
     func checkAuth() {
         isAuthenticated = (try? KeychainManager.shared.retrieveJWT()) != nil
         if isAuthenticated {
@@ -169,11 +173,12 @@ final class AuthService {
             }
         }
 
-        // Migrate Character ownership
+        // Migrate Character ownership (only claim legacy/unmigrated characters)
         if let characters = try? context.fetch(FetchDescriptor<Character>()) {
-            let unscoped = characters.filter { $0.ownerUserId == nil }
+            let unscoped = characters.filter { $0.visibility == .legacy }
             for character in unscoped {
                 character.ownerUserId = userId
+                character.visibility = .owned
             }
         }
 

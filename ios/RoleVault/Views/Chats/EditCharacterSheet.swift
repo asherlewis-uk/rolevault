@@ -67,7 +67,7 @@ struct EditCharacterSheet: View {
             }
             .onAppear {
                 let currentUserId = AuthService.shared.currentUser?.id
-                isOwner = (character.ownerUserId == nil || character.ownerUserId == currentUserId)
+                isOwner = (character.visibility == .owned && character.ownerUserId == currentUserId)
                 showCustomizationNote = !isOwner
 
                 name = character.name

@@ -11,9 +11,19 @@ final class Character {
     var awayMessage: String?
     var avatarData: Data?
 
-    // MARK: - Ownership
-    /// The user who created this character. Nil for legacy data or globally-shared imports.
+    // MARK: - Ownership & Visibility
+    /// The user who created this character. Used for edit-permission checks.
     var ownerUserId: UUID?
+    /// Typed visibility that replaces ambiguous `ownerUserId == nil` semantics.
+    /// `.legacy` is the default for existing rows until `migrateUnscopedData` runs.
+    var visibilityRaw: String
+
+    /// Computed accessor for `visibilityRaw`.
+    /// ⚠️ Not queryable via SwiftData `#Predicate`; use `visibilityRaw` in predicates.
+    var visibility: CharacterVisibility {
+        get { CharacterVisibility(rawValue: visibilityRaw) ?? .legacy }
+        set { visibilityRaw = newValue.rawValue }
+    }
 
     // MARK: - Personality (deep construction)
     var backstory: String
@@ -30,6 +40,13 @@ final class Character {
 
     // MARK: - LibreChat (one-way optional export only)
     var libreChatAgentId: String?
+
+    // MARK: - SwiftData Relationships (cascade deletion)
+    @Relationship(deleteRule: .cascade, inverse: \JournalEntry.character)
+    var journalEntries: [JournalEntry]?
+
+    @Relationship(deleteRule: .cascade, inverse: \GalleryMoment.character)
+    var galleryMoments: [GalleryMoment]?
 
     // MARK: - Metadata
     var createdAt: Date
@@ -59,6 +76,7 @@ final class Character {
         dynamism: Double = 1.0,
         category: CharacterCategory = .assistant,
         ownerUserId: UUID? = nil,
+        visibility: CharacterVisibility? = nil,
         libreChatAgentId: String? = nil,
         awayMessage: String? = nil,
         avatarData: Data? = nil
@@ -77,6 +95,7 @@ final class Character {
         self.dynamism = max(0.0, min(2.0, dynamism))
         self.category = category
         self.ownerUserId = ownerUserId
+        self.visibilityRaw = (visibility ?? (ownerUserId != nil ? .owned : .legacy)).rawValue
         self.libreChatAgentId = libreChatAgentId
         self.awayMessage = awayMessage
         self.avatarData = avatarData
@@ -91,7 +110,8 @@ final class Character {
     // MARK: - Computed Prompt (Base Values)
 
     /// Combines all base personality fields into a single system prompt string for LibreChat.
-    /// To get the per-user effective prompt, use `CharacterStore.effectiveSystemPrompt(character:forUser:)`.
+    /// To get the per-user effective prompt, use `CharacterStore.effectiveSystemPrompt(character:forUser:)`
+    /// or construct `MergedCharacterTraits(base:customization:).formattedSystemPrompt`.
     var formattedSystemPrompt: String {
         var parts: [String] = []
 
@@ -160,6 +180,16 @@ final class Character {
 }
 
 // MARK: - Enums
+
+enum CharacterVisibility: String, Codable, CaseIterable {
+    /// Created by a specific user; editable only by that user.
+    case owned = "owned"
+    /// Globally available to all users; no single owner.
+    case shared = "shared"
+    /// Pre-scoping data that has not yet been migrated to a user.
+    /// Treated as `.owned` by the first logged-in user who triggers migration.
+    case legacy = "legacy"
+}
 
 enum InteractionMode: String, Codable, CaseIterable {
     case companion = "Companion"

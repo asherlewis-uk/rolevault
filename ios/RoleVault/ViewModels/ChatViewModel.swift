@@ -189,7 +189,8 @@ final class ChatViewModel {
             userId: userId,
             conversationId: conversationId,
             textExcerpt: message.text,
-            caption: "Moment with \(character.name)"
+            caption: "Moment with \(character.name)",
+            character: character
         )
         SwiftDataContainer.shared.context.insert(moment)
         try? SwiftDataContainer.shared.context.save()

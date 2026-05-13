@@ -6,6 +6,9 @@ import SwiftData
 @Model
 final class CharacterCustomization {
     @Attribute(.unique) var id: UUID
+    /// Composite unique key derived from `userId` + `characterId`.
+    /// Enforces at most one customization row per user/character pair.
+    @Attribute(.unique) var compositeKey: String
     var userId: UUID
     var characterId: UUID
 
@@ -47,6 +50,7 @@ final class CharacterCustomization {
         self.id = id
         self.userId = userId
         self.characterId = characterId
+        self.compositeKey = "\(userId.uuidString):\(characterId.uuidString)"
         self.backstory = backstory
         self.responseDirective = responseDirective
         self.keyMemories = keyMemories
@@ -77,20 +81,4 @@ final class CharacterCustomization {
             interactionModeRaw = newValue?.rawValue
         }
     }
-}
-
-// MARK: - Effective Character Merging
-
-extension CharacterCustomization {
-    /// Returns the effective value for a field, preferring the override if present.
-    func effectiveBackstory(base: String) -> String { backstory ?? base }
-    func effectiveResponseDirective(base: String) -> String { responseDirective ?? base }
-    func effectiveKeyMemories(base: String) -> String { keyMemories ?? base }
-    func effectiveExampleMessage(base: String) -> String { exampleMessage ?? base }
-    func effectiveGreetingMessage(base: String) -> String { greetingMessage ?? base }
-    func effectiveAvatarDescription(base: String) -> String { avatarDescription ?? base }
-    func effectiveFaceDetail(base: String) -> String { faceDetail ?? base }
-    func effectiveAwayMessage(base: String?) -> String? { awayMessage ?? base }
-    func effectiveInteractionMode(base: InteractionMode) -> InteractionMode { interactionMode ?? base }
-    func effectiveDynamism(base: Double) -> Double { dynamism ?? base }
 }

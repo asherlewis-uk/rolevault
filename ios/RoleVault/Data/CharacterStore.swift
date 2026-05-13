@@ -38,51 +38,7 @@ final class CharacterStore {
 
     @MainActor
     func delete(_ character: Character) throws {
-        let context = SwiftDataContainer.shared.context
-        let charId = character.id
-
-        // Clean up per-user customizations
-        let custDesc = FetchDescriptor<CharacterCustomization>(
-            predicate: #Predicate { $0.characterId == charId }
-        )
-        if let customs = try? context.fetch(custDesc) {
-            customs.forEach(context.delete)
-        }
-
-        // Clean up journal entries
-        let journalDesc = FetchDescriptor<JournalEntry>(
-            predicate: #Predicate { $0.characterId == charId }
-        )
-        if let journals = try? context.fetch(journalDesc) {
-            journals.forEach(context.delete)
-        }
-
-        // Clean up conversations and their messages
-        let convoDesc = FetchDescriptor<Conversation>(
-            predicate: #Predicate { $0.characterId == charId }
-        )
-        if let convos = try? context.fetch(convoDesc) {
-            for convo in convos {
-                let msgDesc = FetchDescriptor<MessageWrapper>(
-                    predicate: #Predicate { $0.conversationId == convo.remoteId }
-                )
-                if let msgs = try? context.fetch(msgDesc) {
-                    msgs.forEach(context.delete)
-                }
-                context.delete(convo)
-            }
-        }
-
-        // Clean up gallery moments
-        let momentDesc = FetchDescriptor<GalleryMoment>(
-            predicate: #Predicate { $0.characterId == charId }
-        )
-        if let moments = try? context.fetch(momentDesc) {
-            moments.forEach(context.delete)
-        }
-
-        context.delete(character)
-        try context.save()
+        try CascadeStore.deleteCharacter(character, context: SwiftDataContainer.shared.context)
     }
 
     // MARK: - Search / Filter / Sort
@@ -103,8 +59,11 @@ final class CharacterStore {
 
     // MARK: - Character Customizations
 
+    /// Fetches the customization row for a specific user/character pair.
+    /// This is the only entry point for customization lookups; callers should use
+    /// `effectiveIsFavorite(character:userId:)` or `ensureCustomization(...)` instead.
     @MainActor
-    func fetchCustomization(characterId: UUID, userId: UUID) throws -> CharacterCustomization? {
+    private func fetchCustomization(characterId: UUID, userId: UUID) throws -> CharacterCustomization? {
         let descriptor = FetchDescriptor<CharacterCustomization>(
             predicate: #Predicate { $0.characterId == characterId && $0.userId == userId }
         )
@@ -149,6 +108,8 @@ final class CharacterStore {
         try updateCustomization(customization)
     }
 
+    /// Returns the effective favorite state for a character.
+    /// `false` when no customization row exists; safe to call from views.
     @MainActor
     func effectiveIsFavorite(character: Character, userId: UUID) -> Bool {
         guard let customization = try? fetchCustomization(characterId: character.id, userId: userId) else {
@@ -159,56 +120,13 @@ final class CharacterStore {
 
     // MARK: - Effective Character Prompts
 
+    /// Builds the per-user effective system prompt by merging base `Character` traits
+    /// with any `CharacterCustomization` overrides via `MergedCharacterTraits`.
     @MainActor
     func effectiveSystemPrompt(character: Character, userId: UUID) -> String {
-        guard let customization = try? fetchCustomization(characterId: character.id, userId: userId) else {
-            return character.formattedSystemPrompt
-        }
-
-        var parts: [String] = []
-
-        let backstory = customization.effectiveBackstory(base: character.backstory)
-        if !backstory.isEmpty {
-            parts.append("Backstory:\n\(backstory)")
-        }
-
-        let directive = customization.effectiveResponseDirective(base: character.responseDirective)
-        if !directive.isEmpty {
-            parts.append("Directive:\n\(directive)")
-        }
-
-        let memories = customization.effectiveKeyMemories(base: character.keyMemories)
-        if !memories.isEmpty {
-            parts.append("Key Memories:\n\(memories)")
-        }
-
-        let example = customization.effectiveExampleMessage(base: character.exampleMessage)
-        if !example.isEmpty {
-            parts.append("Example Message:\n\(example)")
-        }
-
-        let greeting = customization.effectiveGreetingMessage(base: character.greetingMessage)
-        if !greeting.isEmpty {
-            parts.append("Greeting:\n\(greeting)")
-        }
-
-        let appearance = customization.effectiveAvatarDescription(base: character.avatarDescription)
-        if !appearance.isEmpty {
-            parts.append("Appearance:\n\(appearance)")
-        }
-
-        let face = customization.effectiveFaceDetail(base: character.faceDetail)
-        if !face.isEmpty {
-            parts.append("Face Detail:\n\(face)")
-        }
-
-        let mode = customization.effectiveInteractionMode(base: character.interactionMode)
-        parts.append("Interaction Mode: \(mode.rawValue)")
-
-        let dynamism = customization.effectiveDynamism(base: character.dynamism)
-        parts.append("Dynamism: \(String(format: "%.1f", dynamism))")
-
-        return parts.joined(separator: "\n\n")
+        let customization = try? fetchCustomization(characterId: character.id, userId: userId)
+        let merged = MergedCharacterTraits(base: character, customization: customization)
+        return merged.formattedSystemPrompt
     }
 
     // MARK: - Journal Entries (Per-User)
@@ -262,6 +180,7 @@ final class CharacterStore {
     // MARK: - Tavern V2 Export
 
     /// Exports a character to a PNG with embedded Tavern V2 JSON metadata.
+    @MainActor
     func exportToPNG(character: Character, image: UIImage?, userId: UUID? = nil) -> Data? {
         let tavernJSON = buildTavernV2JSON(character: character, userId: userId)
         let baseImage = image ?? placeholderImage(letter: String(character.name.prefix(1)))
@@ -279,6 +198,7 @@ final class CharacterStore {
 
     // MARK: - Tavern V2 JSON
 
+    @MainActor
     private func buildTavernV2JSON(character: Character, userId: UUID? = nil) -> String {
         let entries: [[String: Any]]
         if let uid = userId,
@@ -337,6 +257,7 @@ final class CharacterStore {
             exampleMessage: example,
             greetingMessage: greeting,
             ownerUserId: ownerUserId,
+            visibility: ownerUserId == nil ? .shared : nil,
             avatarData: imageData
         )
 
@@ -349,7 +270,8 @@ final class CharacterStore {
                     let journal = JournalEntry(
                         characterId: character.id,
                         triggerKeyphrase: key,
-                        content: content
+                        content: content,
+                        character: character
                     )
                     SwiftDataContainer.shared.context.insert(journal)
                 }

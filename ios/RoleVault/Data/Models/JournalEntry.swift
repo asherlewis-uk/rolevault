@@ -10,18 +10,24 @@ final class JournalEntry {
     var content: String
     var createdAt: Date
 
+    /// SwiftData relationship for cascade deletion. `userId` remains the
+    /// authoritative filter for per-user scoping.
+    var character: Character?
+
     init(
         id: UUID = UUID(),
         characterId: UUID? = nil,
         userId: UUID? = nil,
         triggerKeyphrase: String,
-        content: String
+        content: String,
+        character: Character? = nil
     ) {
         self.id = id
         self.characterId = characterId
         self.userId = userId
         self.triggerKeyphrase = triggerKeyphrase.lowercased().trimmingCharacters(in: .whitespaces)
         self.content = content
+        self.character = character
         self.createdAt = Date()
     }
 

@@ -28,6 +28,7 @@
 		4295FB54F508E528C171DDC9 /* Conversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = F46F723AA465A6815718D7ED /* Conversation.swift */; };
 		4822C82A0A85F7A1B7905778 /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89FD32AB51EC19CA00E61A0A /* UserAccount.swift */; };
 		4F5FF3039673AFA1EE9D5256 /* CreateCharacterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB62D558F421C34A04FD05D7 /* CreateCharacterViewModel.swift */; };
+		50C695E709D2C28F53DF3942 /* MergedCharacterTraits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91D5E953FB0F0F061F4E80BF /* MergedCharacterTraits.swift */; };
 		57E0806E5681D352AD0A85D3 /* ChatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DFBFB597C65E06BAE4094EC /* ChatModels.swift */; };
 		57EAF37D2D12B1EBFA897EB1 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4487D484E52A7800A557FD5 /* ProfileViewModel.swift */; };
 		59D8D928E58596EA4065C25A /* TokenInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71880D1BAF0DE9FE6AB15DB6 /* TokenInterceptor.swift */; };
@@ -37,6 +38,7 @@
 		6CA76A2923F179398FE04D1B /* ChatsGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C22994EFD3865738993E89E /* ChatsGalleryView.swift */; };
 		6D4AD3F193AF54EAD64597E5 /* MessageInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24869795103D0A7213AC4AED /* MessageInputBar.swift */; };
 		7F46C39235C8AA271F941404 /* GalleryGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6AF93FAC804C2E37F4C5687 /* GalleryGrid.swift */; };
+		80029121504E8EC1F12DF655 /* CascadeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D667EEDC3C14AFA459878B4C /* CascadeStore.swift */; };
 		85F4A44196F94CD3B62F112F /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06C04F204E3068AFA85C39AA /* AuthModels.swift */; };
 		8AED97C8DD78334637688BA3 /* ParticleEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6FBA93C12CF85FE1206419C /* ParticleEffects.swift */; };
 		8AFA0FBAE8AF08537F7719C7 /* RoleVaultApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02DAF473EDFC5546CAF8567D /* RoleVaultApp.swift */; };
@@ -118,6 +120,7 @@
 		89622472182012E21B96BFC0 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		89FD32AB51EC19CA00E61A0A /* UserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAccount.swift; sourceTree = "<group>"; };
 		8FBCA14ED6CD9B20DCC43A7F /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		91D5E953FB0F0F061F4E80BF /* MergedCharacterTraits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MergedCharacterTraits.swift; sourceTree = "<group>"; };
 		939B3D8CEBBCBDEBE892088D /* ActivityCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityCenterView.swift; sourceTree = "<group>"; };
 		98C014D4849309218F6F6AE1 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		9AE395A49D83CE586CFA56F4 /* SwiftDataContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataContainer.swift; sourceTree = "<group>"; };
@@ -134,6 +137,7 @@
 		C7C4D5218758E720480FA500 /* LiquidGlassPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassPanel.swift; sourceTree = "<group>"; };
 		CEEE5BAC90BDB7EF8BF62D2D /* RoleVaultUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultUITests.swift; sourceTree = "<group>"; };
 		CFC96609715CA90B3B9F1B77 /* PersonaManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonaManagerView.swift; sourceTree = "<group>"; };
+		D667EEDC3C14AFA459878B4C /* CascadeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CascadeStore.swift; sourceTree = "<group>"; };
 		DB62D558F421C34A04FD05D7 /* CreateCharacterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateCharacterViewModel.swift; sourceTree = "<group>"; };
 		E4487D484E52A7800A557FD5 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
 		E793A1F7BF99C35DC2D50BB4 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -278,8 +282,10 @@
 			isa = PBXGroup;
 			children = (
 				04BD99A1EDB9305D1383DBFE /* Models */,
+				D667EEDC3C14AFA459878B4C /* CascadeStore.swift */,
 				270B241979D8FBE9444D9B28 /* CharacterStore.swift */,
 				2551AAAA1A4ABB18CC286B36 /* KeychainManager.swift */,
+				91D5E953FB0F0F061F4E80BF /* MergedCharacterTraits.swift */,
 				9AE395A49D83CE586CFA56F4 /* SwiftDataContainer.swift */,
 			);
 			path = Data;
@@ -496,6 +502,7 @@
 				85F4A44196F94CD3B62F112F /* AuthModels.swift in Sources */,
 				993738A95AA39FE8E07E6A4C /* AuthService.swift in Sources */,
 				3F15BE39082E06317B41A31F /* BackendConfigView.swift in Sources */,
+				80029121504E8EC1F12DF655 /* CascadeStore.swift in Sources */,
 				34548A41886947DA6E2BA484 /* CategoryPill.swift in Sources */,
 				B9EF5A4C5BE87668B32FB573 /* Character.swift in Sources */,
 				B6F0F54AE409FB79599C1471 /* CharacterCard.swift in Sources */,
@@ -524,6 +531,7 @@
 				A036B00F6DB9FED285AEE568 /* KeychainManager.swift in Sources */,
 				0191FE319BB77100C378BB31 /* LibreChatAPI.swift in Sources */,
 				00FFE20B81FD9E9AC0E1CBBC /* LiquidGlassPanel.swift in Sources */,
+				50C695E709D2C28F53DF3942 /* MergedCharacterTraits.swift in Sources */,
 				BF6D19E2B9163E32D03AF9B8 /* MessageBubble.swift in Sources */,
 				6D4AD3F193AF54EAD64597E5 /* MessageInputBar.swift in Sources */,
 				C4220FD2E852249ED8B8B43C /* MessageWrapper.swift in Sources */,

@@ -12,6 +12,10 @@ final class GalleryMoment {
     var caption: String
     var createdAt: Date
 
+    /// SwiftData relationship for cascade deletion. `userId` remains the
+    /// authoritative filter for per-user scoping.
+    var character: Character?
+
     init(
         id: UUID = UUID(),
         characterId: UUID? = nil,
@@ -19,7 +23,8 @@ final class GalleryMoment {
         conversationId: String,
         imageData: Data? = nil,
         textExcerpt: String = "",
-        caption: String = ""
+        caption: String = "",
+        character: Character? = nil
     ) {
         self.id = id
         self.characterId = characterId
@@ -28,6 +33,7 @@ final class GalleryMoment {
         self.imageData = imageData
         self.textExcerpt = textExcerpt
         self.caption = caption
+        self.character = character
         self.createdAt = Date()
     }
 }
