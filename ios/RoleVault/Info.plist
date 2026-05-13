@@ -24,8 +24,6 @@
 	<string>RoleVault uses the camera to set character and persona avatars.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>RoleVault accesses photos to set character and persona avatars.</string>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
