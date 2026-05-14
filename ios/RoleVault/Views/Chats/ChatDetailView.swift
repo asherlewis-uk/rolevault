@@ -189,7 +189,7 @@ struct ChatDetailView: View {
         }
     }
 
-    private func animateNewMessages(old: [LibreChatMessage], new: [LibreChatMessage]) {
+    private func animateNewMessages(old: [ChatMessage], new: [ChatMessage]) {
         let newMessages = new.filter { !old.contains($0) }
         for (index, message) in newMessages.enumerated() {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.05) {

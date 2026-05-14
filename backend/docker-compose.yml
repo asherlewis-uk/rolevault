@@ -1,3 +1,7 @@
+networks:
+  server_internal:
+    external: true
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,8 +11,6 @@ services:
       POSTGRES_USER: rolevault
       POSTGRES_PASSWORD: rolevault
       POSTGRES_DB: rolevault
-    ports:
-      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,21 +18,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - server_internal
 
   api:
     build: .
     container_name: rolevault-api
     restart: unless-stopped
-    ports:
-      - "8001:8001"
     environment:
       DATABASE_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault
+      # Assumes LibreChat and RoleVault share the same PostgreSQL instance.
+      # LibreChat users table is accessed directly for password verification and registration.
       LIBRECHAT_DB_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       INFERENCE_URL: ${INFERENCE_URL:-http://host.docker.internal:1234}
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - server_internal
 
 volumes:
   postgres_data:

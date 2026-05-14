@@ -3,6 +3,7 @@ import Foundation
 @Observable
 final class ChatService {
     static let shared = ChatService()
+    static var defaultModel = "gpt-4o"
     private let api = RoleVaultAPI.shared
     private let inference = InferenceAPI.shared
     private let decoder: JSONDecoder
@@ -17,10 +18,10 @@ final class ChatService {
 
     // MARK: - Conversations (RoleVault API)
 
-    func fetchConversations() async throws -> [LibreChatConversation] {
+    func fetchConversations() async throws -> [ChatConversation] {
         let remote: [RemoteConversation] = try await api.get(path: "/api/convos")
         return remote.map {
-            LibreChatConversation(
+            ChatConversation(
                 id: $0.id.uuidString,
                 title: $0.title,
                 createdAt: $0.createdAt,
@@ -30,10 +31,10 @@ final class ChatService {
         }
     }
 
-    func fetchMessages(conversationId: String) async throws -> [LibreChatMessage] {
+    func fetchMessages(conversationId: String) async throws -> [ChatMessage] {
         let remote: [RemoteMessage] = try await api.get(path: "/api/convos/\(conversationId)/messages")
         return remote.map {
-            LibreChatMessage(
+            ChatMessage(
                 id: $0.id.uuidString,
                 text: $0.content,
                 sender: $0.role.capitalized,
@@ -47,11 +48,12 @@ final class ChatService {
 
     /// Send a message to LM Studio and receive the response as a real-time SSE stream.
     func sendMessageStream(
-        messages: [ChatMessage],
-        model: String = "gpt-4o"
+        messages: [ChatCompletionMessage],
+        model: String? = nil
     ) -> AsyncThrowingStream<ChatStreamEvent, Error> {
+        let resolvedModel = model ?? ChatService.defaultModel
         let request = ChatRequest(
-            model: model,
+            model: resolvedModel,
             messages: messages,
             stream: true
         )
@@ -79,7 +81,7 @@ final class ChatService {
                             let payload = String(line.dropFirst(6))
 
                             if payload == "[DONE]" {
-                                let finalMessage = LibreChatMessage(
+                                let finalMessage = ChatMessage(
                                     id: messageId,
                                     text: accumulatedText,
                                     sender: "Assistant",
@@ -105,7 +107,7 @@ final class ChatService {
                             if let chunk = try? self.decoder.decode(OpenAIStreamChunk.self, from: jsonData),
                                let choice = chunk.choices?.first,
                                choice.finishReason != nil {
-                                let finalMessage = LibreChatMessage(
+                                let finalMessage = ChatMessage(
                                     id: messageId,
                                     text: accumulatedText,
                                     sender: "Assistant",
@@ -120,7 +122,7 @@ final class ChatService {
                     }
 
                     // Stream ended without explicit [DONE]
-                    let finalMessage = LibreChatMessage(
+                    let finalMessage = ChatMessage(
                         id: messageId,
                         text: accumulatedText,
                         sender: "Assistant",
@@ -144,16 +146,17 @@ final class ChatService {
 
     /// Non-streaming convenience that accumulates the stream and returns the final response.
     func sendMessage(
-        messages: [ChatMessage],
-        model: String = "gpt-4o"
-    ) async throws -> LibreChatMessage {
+        messages: [ChatCompletionMessage],
+        model: String? = nil
+    ) async throws -> ChatMessage {
+        let resolvedModel = model ?? ChatService.defaultModel
         let request = ChatRequest(
-            model: model,
+            model: resolvedModel,
             messages: messages,
             stream: true
         )
         var finalText = ""
-        var finalMessage: LibreChatMessage?
+        var finalMessage: ChatMessage?
 
         for try await event in sendMessageStream(request) {
             switch event {
@@ -164,7 +167,7 @@ final class ChatService {
             }
         }
 
-        return finalMessage ?? LibreChatMessage(
+        return finalMessage ?? ChatMessage(
             id: UUID().uuidString,
             text: finalText,
             sender: "Assistant",

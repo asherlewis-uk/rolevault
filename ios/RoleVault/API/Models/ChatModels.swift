@@ -4,11 +4,11 @@ import Foundation
 
 struct ChatRequest: Codable {
     let model: String
-    let messages: [ChatMessage]
+    let messages: [ChatCompletionMessage]
     let stream: Bool
 }
 
-struct ChatMessage: Codable {
+struct ChatCompletionMessage: Codable {
     let role: String
     let content: String
 }
@@ -23,8 +23,8 @@ struct ChatResponse: Codable {
 
 struct ChatChoice: Codable {
     let index: Int?
-    let delta: ChatMessage?
-    let message: ChatMessage?
+    let delta: ChatCompletionMessage?
+    let message: ChatCompletionMessage?
     let finishReason: String?
 }
 
@@ -53,7 +53,7 @@ struct RemoteMessage: Codable, Identifiable {
 
 // MARK: - Local Cache Models
 
-struct LibreChatConversation: Codable, Identifiable {
+struct ChatConversation: Codable, Identifiable {
     let id: String
     let title: String?
     let createdAt: String?
@@ -61,7 +61,7 @@ struct LibreChatConversation: Codable, Identifiable {
     let model: String?
 }
 
-struct LibreChatMessage: Codable, Identifiable, Hashable {
+struct ChatMessage: Codable, Identifiable, Hashable {
     let id: String
     let text: String
     let sender: String
@@ -76,7 +76,7 @@ enum ChatStreamEvent: Sendable {
     /// A text delta containing the latest accumulated text from the assistant.
     case delta(String)
     /// Stream completed. Optionally carries the final assembled message.
-    case done(message: LibreChatMessage?)
+    case done(message: ChatMessage?)
 }
 
 /// Internal structure for parsing SSE JSON chunks from OpenAI-compatible servers.

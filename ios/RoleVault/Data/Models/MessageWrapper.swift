@@ -12,7 +12,7 @@ final class MessageWrapper {
     var conversationId: String
     var userId: UUID?
 
-    init(message: LibreChatMessage, conversationId: String, userId: UUID? = nil) {
+    init(message: ChatMessage, conversationId: String, userId: UUID? = nil) {
         self.id = message.id
         self.text = message.text
         self.sender = message.sender

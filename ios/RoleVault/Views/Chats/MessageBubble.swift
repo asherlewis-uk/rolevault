@@ -7,7 +7,7 @@ enum MessageRenderType {
 }
 
 struct MessageBubble: View {
-    let message: LibreChatMessage
+    let message: ChatMessage
     let isUser: Bool
     var characterAvatar: Data?
     @State private var appeared = false

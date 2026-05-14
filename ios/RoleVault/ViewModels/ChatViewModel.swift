@@ -3,7 +3,7 @@ import SwiftData
 
 @Observable
 final class ChatViewModel {
-    var messages: [LibreChatMessage] = []
+    var messages: [ChatMessage] = []
     var isTyping = false
     var errorMessage: String?
     var currentConversationId: String?
@@ -61,7 +61,7 @@ final class ChatViewModel {
         isTyping = true
         defer { isTyping = false }
 
-        let userMessage = LibreChatMessage(
+        let userMessage = ChatMessage(
             id: UUID().uuidString,
             text: text,
             sender: persona?.name ?? "User",
@@ -83,7 +83,7 @@ final class ChatViewModel {
 
         let characterName = character.name
         let assistantId = UUID().uuidString
-        let placeholder = LibreChatMessage(
+        let placeholder = ChatMessage(
             id: assistantId,
             text: "",
             sender: characterName,
@@ -95,20 +95,19 @@ final class ChatViewModel {
         }
 
         // Build conversation history for OpenAI format
-        var chatMessages: [ChatMessage] = []
-        chatMessages.append(ChatMessage(role: "system", content: systemPrompt))
+        var chatMessages: [ChatCompletionMessage] = []
+        chatMessages.append(ChatCompletionMessage(role: "system", content: systemPrompt))
         for msg in messages where msg.isCreatedByUser || msg.id != assistantId {
-            chatMessages.append(ChatMessage(role: msg.isCreatedByUser ? "user" : "assistant", content: msg.text))
+            chatMessages.append(ChatCompletionMessage(role: msg.isCreatedByUser ? "user" : "assistant", content: msg.text))
         }
         // Ensure the last message is the current user message
         if chatMessages.last?.content != text {
-            chatMessages.append(ChatMessage(role: "user", content: text))
+            chatMessages.append(ChatCompletionMessage(role: "user", content: text))
         }
 
         do {
             let stream = ChatService.shared.sendMessageStream(
-                messages: chatMessages,
-                model: "gpt-4o"
+                messages: chatMessages
             )
 
             for try await event in stream {
@@ -116,7 +115,7 @@ final class ChatViewModel {
                 case .delta(let deltaText):
                     await MainActor.run {
                         if let index = messages.firstIndex(where: { $0.id == assistantId }) {
-                            messages[index] = LibreChatMessage(
+                            messages[index] = ChatMessage(
                                 id: assistantId,
                                 text: deltaText,
                                 sender: characterName,
@@ -141,7 +140,7 @@ final class ChatViewModel {
             await MainActor.run {
                 errorMessage = error.localizedDescription
                 if let index = messages.firstIndex(where: { $0.id == assistantId }) {
-                    messages[index] = LibreChatMessage(
+                    messages[index] = ChatMessage(
                         id: assistantId,
                         text: "[Error: \(error.localizedDescription)]",
                         sender: characterName,
@@ -189,7 +188,7 @@ final class ChatViewModel {
     // MARK: - Gallery Moments
 
     @MainActor
-    func saveGalleryMoment(message: LibreChatMessage, conversationId: String, character: Character) {
+    func saveGalleryMoment(message: ChatMessage, conversationId: String, character: Character) {
         guard let userId = AuthService.shared.currentUser?.id else { return }
         let moment = GalleryMoment(
             characterId: character.id,
@@ -269,7 +268,7 @@ final class ChatViewModel {
     }
 
     @MainActor
-    private func cacheMessage(_ message: LibreChatMessage, conversationId: String, userId: UUID) {
+    private func cacheMessage(_ message: ChatMessage, conversationId: String, userId: UUID) {
         let context = SwiftDataContainer.shared.context
         let descriptor = FetchDescriptor<MessageWrapper>(
             predicate: #Predicate { $0.id == message.id && $0.conversationId == conversationId && $0.userId == userId }
@@ -283,7 +282,7 @@ final class ChatViewModel {
     }
 
     @MainActor
-    private func loadCachedMessages(conversationId: String, userId: UUID) -> [LibreChatMessage] {
+    private func loadCachedMessages(conversationId: String, userId: UUID) -> [ChatMessage] {
         let context = SwiftDataContainer.shared.context
         let descriptor = FetchDescriptor<MessageWrapper>(
             predicate: #Predicate { $0.conversationId == conversationId && $0.userId == userId },
@@ -291,7 +290,7 @@ final class ChatViewModel {
         )
         guard let wrappers = try? context.fetch(descriptor) else { return [] }
         return wrappers.map {
-            LibreChatMessage(
+            ChatMessage(
                 id: $0.id,
                 text: $0.text,
                 sender: $0.sender,

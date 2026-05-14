@@ -17,7 +17,6 @@
 		1A1707CEC6E64F7307566338 /* CreateCharacterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 678305050A99D6F8B643292E /* CreateCharacterView.swift */; };
 		1ACD05ED3AECCC461134D4FC /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A220EC154CDB4745DDF8BA01 /* APIError.swift */; };
 		1B1ADA1B4FEE675FD9B54A97 /* ActivityCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939B3D8CEBBCBDEBE892088D /* ActivityCenterView.swift */; };
-		230802CBFA81864ED50B91BC /* AgentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B26D0D889304AB16557728F /* AgentModels.swift */; };
 		23CC52F9592DFA8923F7681B /* RoleVaultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47F59D375384BAD0CB61A23B /* RoleVaultTests.swift */; };
 		2815BA30B993D18F9F60B2E6 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC07807CCB4A9147E1F339F /* RegisterView.swift */; };
 		2C168563DA6F1DB3DBB9F1AC /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC5C5DFBE7CAC3E6D412EC0E /* ProfileView.swift */; };
@@ -93,7 +92,6 @@
 		06C04F204E3068AFA85C39AA /* AuthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModels.swift; sourceTree = "<group>"; };
 		0A5A3A2F6CC3743C1C82243A /* CharacterHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterHeader.swift; sourceTree = "<group>"; };
 		0ADA23FC763F9791A36C07C9 /* RoleVaultAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultAPI.swift; sourceTree = "<group>"; };
-		0B26D0D889304AB16557728F /* AgentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentModels.swift; sourceTree = "<group>"; };
 		0B341AB6E575A653BF6DD548 /* RemoteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteModels.swift; sourceTree = "<group>"; };
 		0F21D6B310757DE8A78F65AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1363FB88D82845EEAEE7A6F7 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
@@ -182,7 +180,6 @@
 		28AAC6B5DDA8970DFC349700 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				0B26D0D889304AB16557728F /* AgentModels.swift */,
 				06C04F204E3068AFA85C39AA /* AuthModels.swift */,
 				7DFBFB597C65E06BAE4094EC /* ChatModels.swift */,
 				0B341AB6E575A653BF6DD548 /* RemoteModels.swift */,
@@ -506,7 +503,6 @@
 			files = (
 				1ACD05ED3AECCC461134D4FC /* APIError.swift in Sources */,
 				1B1ADA1B4FEE675FD9B54A97 /* ActivityCenterView.swift in Sources */,
-				230802CBFA81864ED50B91BC /* AgentModels.swift in Sources */,
 				CA04461F5E2A19308E5C3809 /* AppState.swift in Sources */,
 				0174BCFA338C958A7E05440C /* AuroraBackground.swift in Sources */,
 				85F4A44196F94CD3B62F112F /* AuthModels.swift in Sources */,
