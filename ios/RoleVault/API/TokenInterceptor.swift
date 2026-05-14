@@ -24,22 +24,26 @@ final class TokenInterceptor {
 
         do {
             let refreshToken = try KeychainManager.shared.retrieveRefreshToken()
-            guard let url = URL(string: LibreChatAPI.shared.baseURL + "/api/auth/refresh?retry=true") else {
+            guard let url = URL(string: RoleVaultAPI.shared.baseURL + "/api/auth/refresh") else {
                 throw APIError.invalidURL
             }
 
             var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.setValue("Bearer \(refreshToken)", forHTTPHeaderField: "Authorization")
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+            let body = RefreshRequest(refreshToken: refreshToken)
+            request.httpBody = try JSONEncoder().encode(body)
 
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 throw APIError.unauthorized
             }
 
-            let refreshed = try JSONDecoder().decode(RefreshResponse.self, from: data)
-            try KeychainManager.shared.saveJWT(refreshed.token)
+            let refreshed = try JSONDecoder().decode(TokenResponse.self, from: data)
+            try KeychainManager.shared.saveJWT(refreshed.accessToken)
+            try KeychainManager.shared.saveRefreshToken(refreshed.refreshToken)
             success = true
         } catch {
             await performLogout()

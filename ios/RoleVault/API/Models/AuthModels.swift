@@ -5,20 +5,29 @@ struct LoginRequest: Codable {
     let password: String
 }
 
-struct LoginResponse: Codable {
-    let token: String
-    let refreshToken: String?
-    let user: LibreChatUser?
+struct RegisterRequest: Codable {
+    let email: String
+    let password: String
+    let displayName: String?
+    let avatarUrl: String?
 }
 
-struct LibreChatUser: Codable {
+struct TokenResponse: Codable {
+    let accessToken: String
+    let refreshToken: String
+    let tokenType: String
+    let user: UserResponse
+}
+
+struct UserResponse: Codable {
     let id: String
     let email: String
-    let name: String?
-    let username: String?
-    let avatar: String?
+    let displayName: String?
+    let avatarUrl: String?
+    let createdAt: String?
+    let updatedAt: String?
 }
 
-struct RefreshResponse: Codable {
-    let token: String
+struct RefreshRequest: Codable {
+    let refreshToken: String
 }

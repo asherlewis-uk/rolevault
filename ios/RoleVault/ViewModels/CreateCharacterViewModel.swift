@@ -20,7 +20,6 @@ final class CreateCharacterViewModel {
     var journalEntries: [JournalEntryDraft] = []
     var avatarData: Data? = nil
     var avatarItem: PhotosPickerItem? = nil
-    var createLibreChatAgent: Bool = false
     var errorMessage: String?
 
     struct JournalEntryDraft: Identifiable {
@@ -94,7 +93,7 @@ final class CreateCharacterViewModel {
         let userId = AuthService.shared.currentUser?.id
 
         do {
-            try CharacterStore.shared.insert(character)
+            try await CharacterStore.shared.insert(character)
 
             // Persist journal entries scoped to the creating user
             if let currentUserId = userId {
@@ -107,17 +106,6 @@ final class CreateCharacterViewModel {
                         character: character
                     )
                     try CharacterStore.shared.insertJournalEntry(entry)
-                }
-            }
-
-            if createLibreChatAgent {
-                do {
-                    let agent = try await AgentService.shared.createAgentFromCharacter(character)
-                    character.libreChatAgentId = agent.id
-                    try CharacterStore.shared.update(character)
-                } catch {
-                    // Agent creation failed, but local character is saved.
-                    errorMessage = "Local character saved, but LibreChat agent creation failed: \(error.localizedDescription)"
                 }
             }
 
@@ -166,7 +154,6 @@ final class CreateCharacterViewModel {
         journalEntries = []
         avatarData = nil
         avatarItem = nil
-        createLibreChatAgent = false
         errorMessage = nil
     }
 }

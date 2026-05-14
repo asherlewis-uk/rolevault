@@ -44,17 +44,19 @@ final class HomeViewModel {
     @MainActor
     func toggleFavorite(_ character: Character) {
         guard let userId = AuthService.shared.currentUser?.id else { return }
-        do {
-            try CharacterStore.shared.toggleFavorite(characterId: character.id, userId: userId)
-            // Update local cache immediately
-            if favoriteCharacterIds.contains(character.id) {
-                favoriteCharacterIds.remove(character.id)
-            } else {
-                favoriteCharacterIds.insert(character.id)
+        Task {
+            do {
+                try await CharacterStore.shared.toggleFavorite(characterId: character.id, userId: userId)
+                // Update local cache immediately
+                if favoriteCharacterIds.contains(character.id) {
+                    favoriteCharacterIds.remove(character.id)
+                } else {
+                    favoriteCharacterIds.insert(character.id)
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                showError = true
             }
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
         }
     }
 
@@ -65,12 +67,14 @@ final class HomeViewModel {
 
     @MainActor
     func deleteCharacter(_ character: Character) {
-        do {
-            try CharacterStore.shared.delete(character)
-            favoriteCharacterIds.remove(character.id)
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
+        Task {
+            do {
+                try await CharacterStore.shared.delete(character)
+                favoriteCharacterIds.remove(character.id)
+            } catch {
+                errorMessage = error.localizedDescription
+                showError = true
+            }
         }
     }
 

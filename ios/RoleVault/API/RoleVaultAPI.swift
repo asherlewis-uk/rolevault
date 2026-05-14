@@ -1,12 +1,12 @@
 import Foundation
 
 @Observable
-final class LibreChatAPI {
-    static let shared = LibreChatAPI()
+final class RoleVaultAPI {
+    static let shared = RoleVaultAPI()
 
     var baseURL: String {
         didSet {
-            UserDefaults.standard.set(baseURL, forKey: "librechat_base_url")
+            UserDefaults.standard.set(baseURL, forKey: "rolevault_api_url")
         }
     }
 
@@ -15,7 +15,7 @@ final class LibreChatAPI {
     private let encoder: JSONEncoder
 
     private init() {
-        self.baseURL = UserDefaults.standard.string(forKey: "librechat_base_url") ?? "http://localhost:3080"
+        self.baseURL = UserDefaults.standard.string(forKey: "rolevault_api_url") ?? "http://localhost:8001"
         self.session = URLSession.shared
         self.decoder = JSONDecoder()
         self.decoder.keyDecodingStrategy = .convertFromSnakeCase

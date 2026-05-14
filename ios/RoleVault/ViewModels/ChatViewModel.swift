@@ -28,10 +28,10 @@ final class ChatViewModel {
 
         do {
             let convos = try await ChatService.shared.fetchConversations()
-            if let convo = convos.first(where: { $0.title.contains(character.name) }) {
+            if let convo = convos.first(where: { $0.title?.contains(character.name) == true }) {
                 currentConversationId = convo.id
                 if let local = localConvo {
-                    await updateLocalConversation(local, remoteId: convo.id, title: convo.title)
+                    await updateLocalConversation(local, remoteId: convo.id, title: convo.title ?? character.name)
                 }
                 let msgs = try await ChatService.shared.fetchMessages(conversationId: convo.id)
                 await MainActor.run {
@@ -94,12 +94,21 @@ final class ChatViewModel {
             messages.append(placeholder)
         }
 
+        // Build conversation history for OpenAI format
+        var chatMessages: [ChatMessage] = []
+        chatMessages.append(ChatMessage(role: "system", content: systemPrompt))
+        for msg in messages where msg.isCreatedByUser || msg.id != assistantId {
+            chatMessages.append(ChatMessage(role: msg.isCreatedByUser ? "user" : "assistant", content: msg.text))
+        }
+        // Ensure the last message is the current user message
+        if chatMessages.last?.content != text {
+            chatMessages.append(ChatMessage(role: "user", content: text))
+        }
+
         do {
             let stream = ChatService.shared.sendMessageStream(
-                text: text,
-                conversationId: currentConversationId,
-                instructions: systemPrompt,
-                personaName: persona?.name
+                messages: chatMessages,
+                model: "gpt-4o"
             )
 
             for try await event in stream {
@@ -116,10 +125,8 @@ final class ChatViewModel {
                             )
                         }
                     }
-                case .done(let convoId, _):
-                    if let convoId = convoId {
-                        currentConversationId = convoId
-                    }
+                case .done:
+                    break
                 }
             }
 

@@ -38,9 +38,6 @@ final class Character {
     var interactionMode: InteractionMode
     var dynamism: Double
 
-    // MARK: - LibreChat (one-way optional export only)
-    var libreChatAgentId: String?
-
     // MARK: - SwiftData Relationships (cascade deletion)
     @Relationship(deleteRule: .cascade, inverse: \JournalEntry.character)
     var journalEntries: [JournalEntry]?
@@ -77,7 +74,6 @@ final class Character {
         category: CharacterCategory = .assistant,
         ownerUserId: UUID? = nil,
         visibility: CharacterVisibility? = nil,
-        libreChatAgentId: String? = nil,
         awayMessage: String? = nil,
         avatarData: Data? = nil
     ) {
@@ -96,7 +92,6 @@ final class Character {
         self.category = category
         self.ownerUserId = ownerUserId
         self.visibilityRaw = (visibility ?? (ownerUserId != nil ? .owned : .legacy)).rawValue
-        self.libreChatAgentId = libreChatAgentId
         self.awayMessage = awayMessage
         self.avatarData = avatarData
         self.createdAt = Date()

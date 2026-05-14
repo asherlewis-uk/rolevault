@@ -3,101 +3,131 @@ import Foundation
 @Observable
 final class ChatService {
     static let shared = ChatService()
-    private let api = LibreChatAPI.shared
+    private let api = RoleVaultAPI.shared
+    private let inference = InferenceAPI.shared
     private let decoder: JSONDecoder
+    private let encoder: JSONEncoder
 
     private init() {
         self.decoder = JSONDecoder()
         self.decoder.keyDecodingStrategy = .convertFromSnakeCase
+        self.encoder = JSONEncoder()
+        self.encoder.keyEncodingStrategy = .convertToSnakeCase
     }
 
-    // MARK: - Conversations
+    // MARK: - Conversations (RoleVault API)
 
     func fetchConversations() async throws -> [LibreChatConversation] {
-        let response: ConvoListResponse = try await api.get(path: "/api/convos")
-        return response.conversations
+        let remote: [RemoteConversation] = try await api.get(path: "/api/convos")
+        return remote.map {
+            LibreChatConversation(
+                id: $0.id.uuidString,
+                title: $0.title,
+                createdAt: $0.createdAt,
+                updatedAt: $0.updatedAt,
+                model: $0.model
+            )
+        }
     }
 
     func fetchMessages(conversationId: String) async throws -> [LibreChatMessage] {
-        let response: MessageListResponse = try await api.get(path: "/api/messages/\(conversationId)")
-        return response.messages
+        let remote: [RemoteMessage] = try await api.get(path: "/api/convos/\(conversationId)/messages")
+        return remote.map {
+            LibreChatMessage(
+                id: $0.id.uuidString,
+                text: $0.content,
+                sender: $0.role.capitalized,
+                isCreatedByUser: $0.role == "user",
+                createdAt: $0.createdAt
+            )
+        }
     }
 
-    // MARK: - Streaming Send
+    // MARK: - Streaming Send (Inference API)
 
-    /// Send a message and receive the response as a real-time SSE stream.
+    /// Send a message to LM Studio and receive the response as a real-time SSE stream.
     func sendMessageStream(
-        text: String,
-        conversationId: String? = nil,
-        endpoint: String = "agents",
-        model: String = "gpt-4o",
-        instructions: String? = nil,
-        agentId: String? = nil,
-        personaName: String? = nil
+        messages: [ChatMessage],
+        model: String = "gpt-4o"
     ) -> AsyncThrowingStream<ChatStreamEvent, Error> {
-        let request = AskRequest(
-            text: text,
-            conversationId: conversationId,
-            endpoint: endpoint,
+        let request = ChatRequest(
             model: model,
-            instructions: instructions,
-            agentOptions: agentId.map { AskRequest.AgentOptions(agentId: $0, model: model) },
-            persona: personaName.map { AskRequest.PersonaPayload(name: $0, role: nil) }
+            messages: messages,
+            stream: true
         )
         return sendMessageStream(request)
     }
 
     /// Send a message and receive the response as a real-time SSE stream.
-    func sendMessageStream(_ request: AskRequest) -> AsyncThrowingStream<ChatStreamEvent, Error> {
+    func sendMessageStream(_ request: ChatRequest) -> AsyncThrowingStream<ChatStreamEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    let encoder = JSONEncoder()
-                    encoder.keyEncodingStrategy = .convertToSnakeCase
-                    let body = try encoder.encode(request)
+                    let body = try self.encoder.encode(request)
 
-                    let (bytes, _) = try await api.stream(
-                        path: "/api/ask",
+                    let (bytes, _) = try await self.inference.stream(
+                        path: "/v1/chat/completions",
                         method: "POST",
-                        body: body,
-                        accept: "text/event-stream"
+                        body: body
                     )
 
-                    var dataLines: [String] = []
-                    var lastMessage: LibreChatMessage?
-                    var lastConversationId: String?
+                    var accumulatedText = ""
+                    let messageId = UUID().uuidString
 
                     for try await line in bytes.lines {
                         if line.hasPrefix("data: ") {
-                            dataLines.append(String(line.dropFirst(6)))
-                        } else if line.isEmpty {
-                            let payload = dataLines.joined(separator: "\n")
-                            dataLines.removeAll()
+                            let payload = String(line.dropFirst(6))
 
                             if payload == "[DONE]" {
-                                continuation.yield(.done(conversationId: lastConversationId, message: lastMessage))
+                                let finalMessage = LibreChatMessage(
+                                    id: messageId,
+                                    text: accumulatedText,
+                                    sender: "Assistant",
+                                    isCreatedByUser: false,
+                                    createdAt: ISO8601DateFormatter().string(from: Date())
+                                )
+                                continuation.yield(.done(message: finalMessage))
                                 continuation.finish()
                                 return
                             }
 
-                            guard !payload.isEmpty else { continue }
+                            guard !payload.isEmpty,
+                                  let jsonData = payload.data(using: .utf8) else { continue }
 
-                            if let jsonData = payload.data(using: .utf8) {
-                                if let chunk = try? self.decoder.decode(SSEChunk.self, from: jsonData) {
-                                    lastConversationId = chunk.conversationId ?? lastConversationId
-                                    if let msg = chunk.message {
-                                        lastMessage = msg
-                                        continuation.yield(.delta(msg.text))
-                                    } else if let text = chunk.text {
-                                        continuation.yield(.delta(text))
-                                    }
-                                }
+                            if let chunk = try? self.decoder.decode(OpenAIStreamChunk.self, from: jsonData),
+                               let choice = chunk.choices?.first,
+                               let delta = choice.delta,
+                               let content = delta.content {
+                                accumulatedText += content
+                                continuation.yield(.delta(accumulatedText))
+                            }
+
+                            if let chunk = try? self.decoder.decode(OpenAIStreamChunk.self, from: jsonData),
+                               let choice = chunk.choices?.first,
+                               choice.finishReason != nil {
+                                let finalMessage = LibreChatMessage(
+                                    id: messageId,
+                                    text: accumulatedText,
+                                    sender: "Assistant",
+                                    isCreatedByUser: false,
+                                    createdAt: ISO8601DateFormatter().string(from: Date())
+                                )
+                                continuation.yield(.done(message: finalMessage))
+                                continuation.finish()
+                                return
                             }
                         }
                     }
 
                     // Stream ended without explicit [DONE]
-                    continuation.yield(.done(conversationId: lastConversationId, message: lastMessage))
+                    let finalMessage = LibreChatMessage(
+                        id: messageId,
+                        text: accumulatedText,
+                        sender: "Assistant",
+                        isCreatedByUser: false,
+                        createdAt: ISO8601DateFormatter().string(from: Date())
+                    )
+                    continuation.yield(.done(message: finalMessage))
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
@@ -114,54 +144,32 @@ final class ChatService {
 
     /// Non-streaming convenience that accumulates the stream and returns the final response.
     func sendMessage(
-        text: String,
-        conversationId: String? = nil,
-        endpoint: String = "agents",
-        model: String = "gpt-4o",
-        instructions: String? = nil,
-        agentId: String? = nil,
-        personaName: String? = nil
-    ) async throws -> AskResponse {
-        let request = AskRequest(
-            text: text,
-            conversationId: conversationId,
-            endpoint: endpoint,
+        messages: [ChatMessage],
+        model: String = "gpt-4o"
+    ) async throws -> LibreChatMessage {
+        let request = ChatRequest(
             model: model,
-            instructions: instructions,
-            agentOptions: agentId.map { AskRequest.AgentOptions(agentId: $0, model: model) },
-            persona: personaName.map { AskRequest.PersonaPayload(name: $0, role: nil) }
+            messages: messages,
+            stream: true
         )
-        return try await sendMessage(request)
-    }
-
-    /// Non-streaming convenience that accumulates the stream and returns the final response.
-    func sendMessage(_ request: AskRequest) async throws -> AskResponse {
         var finalText = ""
-        var finalConversationId: String?
         var finalMessage: LibreChatMessage?
 
         for try await event in sendMessageStream(request) {
             switch event {
             case .delta(let text):
                 finalText = text
-            case .done(let cid, let msg):
-                finalConversationId = cid
+            case .done(let msg):
                 finalMessage = msg
             }
         }
 
-        let message = finalMessage ?? LibreChatMessage(
+        return finalMessage ?? LibreChatMessage(
             id: UUID().uuidString,
             text: finalText,
             sender: "Assistant",
             isCreatedByUser: false,
             createdAt: ISO8601DateFormatter().string(from: Date())
-        )
-
-        return AskResponse(
-            message: message,
-            conversationId: finalConversationId,
-            response: finalText
         )
     }
 }

@@ -111,7 +111,7 @@ struct LoginView: View {
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundStyle(.primary)
 
-                Text("Connect to your LibreChat universe")
+                Text("Connect to RoleVault")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -153,6 +153,14 @@ struct LoginView: View {
                             )
                         }
                         .disabled(email.isEmpty || password.isEmpty || isLoading)
+
+                        NavigationLink {
+                            RegisterView()
+                        } label: {
+                            Text("Don't have an account? Sign up")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .padding(.horizontal, 32)

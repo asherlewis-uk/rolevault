@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct BackendConfigView: View {
-    @State private var urlString: String = ""
+    @State private var apiURLString: String = ""
+    @State private var inferenceURLString: String = ""
     @State private var showTestResult: Bool = false
     @State private var testSuccess: Bool = false
     @State private var isTesting: Bool = false
@@ -12,8 +13,15 @@ struct BackendConfigView: View {
             AuroraBackground()
 
             Form {
-                Section("Server URL") {
-                    TextField("http://localhost:3080", text: $urlString)
+                Section("RoleVault Server") {
+                    TextField("http://localhost:8001", text: $apiURLString)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                }
+
+                Section("Inference Server") {
+                    TextField("http://localhost:1234", text: $inferenceURLString)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -31,7 +39,7 @@ struct BackendConfigView: View {
                             }
                         }
                     }
-                    .disabled(urlString.isEmpty || isTesting)
+                    .disabled(apiURLString.isEmpty || isTesting)
 
                     if showTestResult {
                         HStack {
@@ -45,15 +53,16 @@ struct BackendConfigView: View {
 
                 if let config = serverConfig {
                     Section("Server Info") {
-                        LabeledContent("Version", value: config.version ?? "Unknown")
-                        LabeledContent("Registration", value: config.registrationEnabled == true ? "Enabled" : "Disabled")
+                        LabeledContent("Version", value: config.version)
+                        LabeledContent("Models", value: config.models.joined(separator: ", "))
                     }
                 }
 
                 Section {
                     Button("Save") {
                         HapticEngine.notification(.success)
-                        LibreChatAPI.shared.baseURL = urlString.trimmingCharacters(in: .whitespaces)
+                        RoleVaultAPI.shared.baseURL = apiURLString.trimmingCharacters(in: .whitespaces)
+                        InferenceAPI.shared.baseURL = inferenceURLString.trimmingCharacters(in: .whitespaces)
                     }
                     .frame(maxWidth: .infinity)
                     .foregroundStyle(.tint)
@@ -63,7 +72,8 @@ struct BackendConfigView: View {
         }
         .navigationTitle("Backend")
         .onAppear {
-            urlString = LibreChatAPI.shared.baseURL
+            apiURLString = RoleVaultAPI.shared.baseURL
+            inferenceURLString = InferenceAPI.shared.baseURL
         }
     }
 
@@ -71,8 +81,10 @@ struct BackendConfigView: View {
         isTesting = true
         defer { isTesting = false }
 
-        let original = LibreChatAPI.shared.baseURL
-        LibreChatAPI.shared.baseURL = urlString.trimmingCharacters(in: .whitespaces)
+        let originalAPI = RoleVaultAPI.shared.baseURL
+        let originalInference = InferenceAPI.shared.baseURL
+        RoleVaultAPI.shared.baseURL = apiURLString.trimmingCharacters(in: .whitespaces)
+        InferenceAPI.shared.baseURL = inferenceURLString.trimmingCharacters(in: .whitespaces)
 
         do {
             let config = try await ConfigService.shared.fetchConfig()
@@ -89,6 +101,7 @@ struct BackendConfigView: View {
         }
 
         // Don't persist until user taps Save
-        LibreChatAPI.shared.baseURL = original
+        RoleVaultAPI.shared.baseURL = originalAPI
+        InferenceAPI.shared.baseURL = originalInference
     }
 }

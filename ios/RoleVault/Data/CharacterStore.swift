@@ -8,7 +8,60 @@ import UIKit
 @Observable
 final class CharacterStore {
     static let shared = CharacterStore()
-    private init() {}
+    private let api = RoleVaultAPI.shared
+    private let decoder = JSONDecoder()
+    private let encoder = JSONEncoder()
+
+    private init() {
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+    }
+
+    // MARK: - Remote Sync
+
+    @MainActor
+    func sync() async throws {
+        let remoteCharacters: [RemoteCharacter] = try await api.get(path: "/api/characters")
+        let context = SwiftDataContainer.shared.context
+        for remote in remoteCharacters {
+            let descriptor = FetchDescriptor<Character>(predicate: #Predicate { $0.id == remote.id })
+            if let existing = try? context.fetch(descriptor).first {
+                existing.name = remote.name
+                existing.subtitle = remote.subtitle ?? ""
+                existing.backstory = remote.backstory ?? ""
+                existing.responseDirective = remote.responseDirective ?? ""
+                existing.keyMemories = remote.keyMemories ?? ""
+                existing.exampleMessage = remote.exampleMessage ?? ""
+                existing.greetingMessage = remote.greetingMessage ?? ""
+                existing.avatarDescription = remote.avatarDescription ?? ""
+                existing.faceDetail = remote.faceDetail ?? ""
+                existing.interactionMode = InteractionMode(rawValue: remote.interactionMode ?? "Companion") ?? .companion
+                existing.dynamism = remote.dynamism ?? 1.0
+                existing.category = CharacterCategory(rawValue: remote.category ?? "Assistant") ?? .assistant
+                existing.visibilityRaw = remote.visibility ?? "owned"
+            } else {
+                let character = Character(
+                    id: remote.id,
+                    name: remote.name,
+                    subtitle: remote.subtitle ?? "",
+                    backstory: remote.backstory ?? "",
+                    responseDirective: remote.responseDirective ?? "",
+                    keyMemories: remote.keyMemories ?? "",
+                    exampleMessage: remote.exampleMessage ?? "",
+                    greetingMessage: remote.greetingMessage ?? "",
+                    avatarDescription: remote.avatarDescription ?? "",
+                    faceDetail: remote.faceDetail ?? "",
+                    interactionMode: InteractionMode(rawValue: remote.interactionMode ?? "Companion") ?? .companion,
+                    dynamism: remote.dynamism ?? 1.0,
+                    category: CharacterCategory(rawValue: remote.category ?? "Assistant") ?? .assistant,
+                    ownerUserId: remote.ownerUserId,
+                    visibility: CharacterVisibility(rawValue: remote.visibility ?? "owned")
+                )
+                context.insert(character)
+            }
+        }
+        try context.save()
+    }
 
     // MARK: - Character CRUD
 
@@ -25,20 +78,24 @@ final class CharacterStore {
     }
 
     @MainActor
-    func insert(_ character: Character) throws {
+    func insert(_ character: Character) async throws {
         SwiftDataContainer.shared.context.insert(character)
         try SwiftDataContainer.shared.context.save()
+        let _: RemoteCharacter? = try? await api.post(path: "/api/characters", body: RemoteCharacterCreate(from: character))
     }
 
     @MainActor
-    func update(_ character: Character) throws {
+    func update(_ character: Character) async throws {
         character.touch()
         try SwiftDataContainer.shared.context.save()
+        let bodyData = try encoder.encode(RemoteCharacterUpdate(from: character))
+        _ = try? await api.request(path: "/api/characters/\(character.id)", method: "PUT", body: bodyData)
     }
 
     @MainActor
-    func delete(_ character: Character) throws {
+    func delete(_ character: Character) async throws {
         try CascadeStore.deleteCharacter(character, context: SwiftDataContainer.shared.context)
+        _ = try? await api.delete(path: "/api/characters/\(character.id)")
     }
 
     // MARK: - Search / Filter / Sort
@@ -102,7 +159,7 @@ final class CharacterStore {
     }
 
     @MainActor
-    func toggleFavorite(characterId: UUID, userId: UUID) throws {
+    func toggleFavorite(characterId: UUID, userId: UUID) async throws {
         let customization = try ensureCustomization(characterId: characterId, userId: userId)
         customization.isFavorite.toggle()
         try updateCustomization(customization)

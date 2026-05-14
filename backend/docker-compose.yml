@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rolevault-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rolevault
+      POSTGRES_PASSWORD: rolevault
+      POSTGRES_DB: rolevault
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rolevault"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: rolevault-api
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault
+      LIBRECHAT_DB_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      INFERENCE_URL: ${INFERENCE_URL:-http://host.docker.internal:1234}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

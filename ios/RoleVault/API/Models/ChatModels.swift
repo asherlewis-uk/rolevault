@@ -1,29 +1,64 @@
 import Foundation
 
-struct AskRequest: Codable {
-    let text: String
-    let conversationId: String?
-    let endpoint: String
+// MARK: - OpenAI-Compatible Chat Completions
+
+struct ChatRequest: Codable {
     let model: String
-    let instructions: String?
-    let agentOptions: AgentOptions?
-    let persona: PersonaPayload?
-
-    struct AgentOptions: Codable {
-        let agentId: String
-        let model: String?
-    }
-
-    struct PersonaPayload: Codable {
-        let name: String
-        let role: String?
-    }
+    let messages: [ChatMessage]
+    let stream: Bool
 }
 
-struct AskResponse: Codable {
-    let message: LibreChatMessage?
-    let conversationId: String?
-    let response: String?
+struct ChatMessage: Codable {
+    let role: String
+    let content: String
+}
+
+struct ChatResponse: Codable {
+    let id: String?
+    let object: String?
+    let created: Int?
+    let model: String?
+    let choices: [ChatChoice]?
+}
+
+struct ChatChoice: Codable {
+    let index: Int?
+    let delta: ChatMessage?
+    let message: ChatMessage?
+    let finishReason: String?
+}
+
+// MARK: - Remote API Models (RoleVault Backend)
+
+struct RemoteConversation: Codable, Identifiable {
+    let id: UUID
+    let userId: UUID
+    let characterId: UUID?
+    let personaId: UUID?
+    let title: String?
+    let model: String?
+    let isArchived: Bool
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct RemoteMessage: Codable, Identifiable {
+    let id: UUID
+    let conversationId: UUID
+    let userId: UUID
+    let role: String
+    let content: String
+    let createdAt: String
+}
+
+// MARK: - Local Cache Models
+
+struct LibreChatConversation: Codable, Identifiable {
+    let id: String
+    let title: String?
+    let createdAt: String?
+    let updatedAt: String?
+    let model: String?
 }
 
 struct LibreChatMessage: Codable, Identifiable, Hashable {
@@ -34,37 +69,27 @@ struct LibreChatMessage: Codable, Identifiable, Hashable {
     let createdAt: String?
 }
 
-struct ConvoListResponse: Codable {
-    let conversations: [LibreChatConversation]
-}
-
-struct LibreChatConversation: Codable, Identifiable {
-    let id: String
-    let title: String
-    let createdAt: String?
-    let updatedAt: String?
-    let endpoint: String?
-    let model: String?
-}
-
-struct MessageListResponse: Codable {
-    let messages: [LibreChatMessage]
-    let conversation: LibreChatConversation?
-}
-
 // MARK: - SSE Streaming
 
 /// Events emitted by the chat message stream.
 enum ChatStreamEvent: Sendable {
     /// A text delta containing the latest accumulated text from the assistant.
     case delta(String)
-    /// Stream completed. Optionally carries the final conversation ID and assembled message.
-    case done(conversationId: String?, message: LibreChatMessage?)
+    /// Stream completed. Optionally carries the final assembled message.
+    case done(message: LibreChatMessage?)
 }
 
-/// Internal structure for parsing SSE JSON chunks from LibreChat.
-struct SSEChunk: Decodable {
-    let conversationId: String?
-    let message: LibreChatMessage?
-    let text: String?
+/// Internal structure for parsing SSE JSON chunks from OpenAI-compatible servers.
+struct OpenAIStreamChunk: Decodable {
+    let id: String?
+    let choices: [OpenAIStreamChoice]?
+}
+
+struct OpenAIStreamChoice: Decodable {
+    let delta: OpenAIStreamDelta?
+    let finishReason: String?
+}
+
+struct OpenAIStreamDelta: Decodable {
+    let content: String?
 }
