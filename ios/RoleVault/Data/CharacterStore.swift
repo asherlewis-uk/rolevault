@@ -269,6 +269,7 @@ final class CharacterStore {
                    let content = entry["content"] as? String {
                     let journal = JournalEntry(
                         characterId: character.id,
+                        userId: ownerUserId,
                         triggerKeyphrase: key,
                         content: content,
                         character: character

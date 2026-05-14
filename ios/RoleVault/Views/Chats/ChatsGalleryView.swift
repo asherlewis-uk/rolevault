@@ -81,8 +81,7 @@ struct ChatsGalleryView: View {
 
     private func deleteConversation(_ convo: Conversation) {
         withAnimation {
-            SwiftDataContainer.shared.context.delete(convo)
-            try? SwiftDataContainer.shared.context.save()
+            try? CascadeStore.deleteConversation(convo, context: SwiftDataContainer.shared.context)
             conversations.removeAll { $0.id == convo.id }
         }
     }

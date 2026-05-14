@@ -87,12 +87,7 @@ struct ChatDetailView: View {
             loadPersonas()
             await viewModel.loadConversation(character: character, persona: activePersona)
         }
-        .onAppear {
-            loadPersonas()
-            Task {
-                await viewModel.loadConversation(character: character, persona: activePersona)
-            }
-        }
+
         .onChange(of: viewModel.messages) { old, new in
             animateNewMessages(old: old, new: new)
         }
