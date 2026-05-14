@@ -62,6 +62,12 @@ Carthage/Checkouts/
 *.swp
 *.swo
 *~
+.claude
+.continue
+.cursor
+.gortex
+.gitnexus
+.opencode
 
 # Environment
 .env
@@ -74,4 +80,11 @@ logs/
 
 # Node (if any tooling)
 node_modules/
----ROLEVAULT ROTATION FILES---\ndocs/user_next_prompt.md\ndocs/user_bring_back.md
+
+# RoleVault rotation files
+docs/user_next_prompt.md
+docs/user_bring_back.md
+
+# Python
+__pycache__/
+*.pyc
