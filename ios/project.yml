@@ -53,6 +53,8 @@ targets:
       path: RoleVault/RoleVault.entitlements
       properties:
         aps-environment: development
+        com.apple.developer.applesignin:
+        - Default
   RoleVaultTests:
     type: bundle.unit-test
     platform: iOS

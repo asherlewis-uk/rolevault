@@ -126,6 +126,19 @@ struct RegisterView: View {
             _ = try await AuthService.shared.register(email: email, password: password, displayName: displayName)
             HapticEngine.notification(.success)
             dismiss()
+        } catch let apiError as APIError {
+            switch apiError {
+            case .networkError, .offline:
+                errorMessage = "Cannot reach server. Check Backend URL in Settings (gear icon)."
+            case .serverError(409, _):
+                errorMessage = "Email already registered."
+            case .unauthorized, .serverError(401, _):
+                errorMessage = "Registration denied."
+            default:
+                errorMessage = apiError.localizedDescription
+            }
+            showError = true
+            HapticEngine.notification(.error)
         } catch {
             errorMessage = error.localizedDescription
             showError = true
