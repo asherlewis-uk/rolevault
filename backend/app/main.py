@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -38,7 +39,7 @@ app.add_middleware(
 
 @app.get("/health", tags=["health"])
 async def health_check():
-    return {"status": "ok", "service": settings.app_name}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat(), "service": settings.app_name}
 
 
 from app.auth.router import router as auth_router

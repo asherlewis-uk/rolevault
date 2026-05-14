@@ -26,7 +26,7 @@ services:
     container_name: rolevault-api
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault
+      DATABASE_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault?options=-c%20search_path%3Drolevault
       # Assumes LibreChat and RoleVault share the same PostgreSQL instance.
       # LibreChat users table is accessed directly for password verification and registration.
       LIBRECHAT_DB_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault

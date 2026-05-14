@@ -7,7 +7,7 @@ final class InferenceAPI {
 
     var baseURL: String {
         didSet {
-            UserDefaults.standard.set(baseURL, forKey: "inference_url")
+            UserDefaults.standard.set(baseURL, forKey: "inference_api_url")
         }
     }
 
@@ -16,7 +16,7 @@ final class InferenceAPI {
     private let encoder: JSONEncoder
 
     private init() {
-        self.baseURL = UserDefaults.standard.string(forKey: "inference_url") ?? "http://localhost:1234"
+        self.baseURL = UserDefaults.standard.string(forKey: "inference_api_url") ?? "http://localhost:1234"
         self.session = URLSession.shared
         self.decoder = JSONDecoder()
         self.encoder = JSONEncoder()

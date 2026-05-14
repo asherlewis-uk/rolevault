@@ -100,20 +100,41 @@ struct RegisterView: View {
     }
 
     private func register() async {
+        guard !displayName.isEmpty else {
+            errorMessage = "Display name is required"
+            showError = true
+            return
+        }
+        guard isValidEmail(email) else {
+            errorMessage = "Please enter a valid email address"
+            showError = true
+            return
+        }
         guard password == confirmPassword else {
             errorMessage = "Passwords do not match"
+            showError = true
+            return
+        }
+        guard password.count >= 6 else {
+            errorMessage = "Password must be at least 6 characters"
             showError = true
             return
         }
         isLoading = true
         defer { isLoading = false }
         do {
-            _ = try await AuthService.shared.register(email: email, password: password, displayName: displayName.isEmpty ? nil : displayName)
+            _ = try await AuthService.shared.register(email: email, password: password, displayName: displayName)
             HapticEngine.notification(.success)
+            dismiss()
         } catch {
             errorMessage = error.localizedDescription
             showError = true
             HapticEngine.notification(.error)
         }
+    }
+
+    private func isValidEmail(_ email: String) -> Bool {
+        let regex = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        return NSPredicate(format: "SELF MATCHES %@", regex).evaluate(with: email)
     }
 }
