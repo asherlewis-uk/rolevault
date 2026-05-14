@@ -1,3 +1,6 @@
+import jwt as pyjwt
+import requests
+
 from uuid import uuid4
 from typing import Optional
 
@@ -8,7 +11,7 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from app.database import get_db
 from app.models import User, LibreChatUser
-from app.schemas import UserCreate, LoginRequest, TokenResponse, RefreshRequest, UserResponse
+from app.schemas import UserCreate, LoginRequest, TokenResponse, RefreshRequest, UserResponse, AppleAuthRequest
 from app.auth.utils import (
     hash_password,
     verify_password,
@@ -165,6 +168,105 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
         access_token=access_token,
         refresh_token=new_refresh_token,
         user=_user_response(user),
+    )
+
+
+@router.post("/apple", response_model=TokenResponse)
+async def apple_auth(payload: AppleAuthRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Authenticate via Sign in with Apple.
+    Verifies the Apple identity token, then finds or creates a user.
+    """
+    # 1. Fetch Apple's public keys
+    jwks_resp = requests.get("https://appleid.apple.com/auth/keys", timeout=10)
+    jwks_resp.raise_for_status()
+    jwks = jwks_resp.json()
+
+    # 2. Decode the header to find the key ID
+    try:
+        unverified_header = pyjwt.get_unverified_header(payload.identity_token)
+    except pyjwt.PyJWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid identity token")
+
+    # 3. Find the matching key
+    kid = unverified_header.get("kid")
+    key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
+    if key is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Key not found in Apple JWKS")
+
+    public_key = pyjwt.algorithms.RSAAlgorithm.from_jwk(key)
+
+    # 4. Verify the token
+    try:
+        decoded = pyjwt.decode(
+            payload.identity_token,
+            public_key,
+            algorithms=["RS256"],
+            audience="com.rolevault.app",
+            issuer="https://appleid.apple.com",
+        )
+    except pyjwt.PyJWTError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Token verification failed: {str(e)}")
+
+    apple_user_id = decoded.get("sub")
+    email = decoded.get("email")
+    if not apple_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing sub claim in Apple token")
+
+    # 5. Look up by apple_user_id
+    result = await db.execute(select(User).where(User.apple_user_id == apple_user_id))
+    rv_user = result.scalar_one_or_none()
+
+    if rv_user:
+        # Existing user — return RoleVault JWT
+        access_token = create_access_token(rv_user.id)
+        refresh_token = create_refresh_token(rv_user.id)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user=_user_response(rv_user),
+        )
+
+    # 6. New user — create in both tables
+    display_name = email.split("@")[0] if email else "User"
+    new_id = uuid4()
+
+    lc_user = LibreChatUser(
+        id=new_id,
+        email=email or f"{apple_user_id}@appleid.apple",
+        password="",  # Apple users don't use password auth
+        name=display_name,
+        username=apple_user_id,
+    )
+    db.add(lc_user)
+    try:
+        await db.flush()
+    except (IntegrityError, ProgrammingError):
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email conflict in LibreChat")
+
+    rv_user = User(
+        id=new_id,
+        email=email or f"{apple_user_id}@appleid.apple",
+        display_name=display_name,
+        apple_user_id=apple_user_id,
+    )
+    db.add(rv_user)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists in RoleVault")
+
+    await db.refresh(rv_user)
+
+    access_token = create_access_token(rv_user.id)
+    refresh_token = create_refresh_token(rv_user.id)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=_user_response(rv_user),
     )
 
 

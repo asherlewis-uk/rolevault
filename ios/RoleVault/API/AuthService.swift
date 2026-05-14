@@ -18,6 +18,23 @@ final class AuthService {
         }
     }
 
+    /// Sign in with Apple. Sends the identity token to the backend which verifies it and returns a RoleVault JWT.
+    func signInWithApple(identityToken: String) async throws -> TokenResponse {
+        let body = ["identity_token": identityToken]
+        let response: TokenResponse = try await api.post(path: "/api/auth/apple", body: body)
+
+        try KeychainManager.shared.saveJWT(response.accessToken)
+        try KeychainManager.shared.saveRefreshToken(response.refreshToken)
+
+        await MainActor.run {
+            isAuthenticated = true
+        }
+
+        await persistUserAccount(remoteUser: response.user)
+
+        return response
+    }
+
     /// Authenticate with email and password, store tokens in Keychain, persist user account.
     func login(email: String, password: String) async throws -> TokenResponse {
         let request = LoginRequest(email: email, password: password)

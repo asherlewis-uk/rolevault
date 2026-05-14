@@ -1,275 +1,541 @@
 # RoleVault — User Next Prompt
 
-**Working directory:** ~/PROJECTS/rolevault
-**Branch:** main
-**Goal:** End-to-end audit of the current build state (~5,267 lines across 21 modified + 4 new Swift files + backend Python). Cross-reference every file against the locked decisions from the reactivity prompt and the architecture pivot plan. Identify regressions, scope violations, dead code, missing imports, and inconsistencies.
-
-This is a READ-ONLY audit. No code is written.
+**Working directory:** ~/PROJECTS/rolevault  
+**Branch:** main  
+**Goal:** Add Sign in with Apple (alongside existing email auth) + fix Xcode install error so the app can run on a physical device.
 
 ---
 
-## §1 — What Changed
+## §A — Previous Run Status
 
-The previous prompt was: "Fix @Query→@State reactivity loss in 4 views." The agent also implemented the architecture pivot (RoleVault API + LM Studio inference) in the same run. Full scope:
-
-### Modified (21 files)
-`AuthService.swift`, `ChatService.swift`, `ConfigService.swift`, `TokenInterceptor.swift`, `AuthModels.swift`, `ChatModels.swift`, `DependencyContainer.swift`, `RoleVaultApp.swift`, `CharacterStore.swift`, `Character.swift`, `ChatViewModel.swift`, `CreateCharacterViewModel.swift`, `HomeViewModel.swift`, `ProfileViewModel.swift`, `BackendConfigView.swift`, `ChatsGalleryView.swift`, `ActivityCenterView.swift`, `PersonaManagerView.swift`, `ChatDetailView.swift`, `EditCharacterSheet.swift`, `project.pbxproj`
-
-### New (4 files)
-`RoleVaultAPI.swift`, `InferenceAPI.swift`, `RemoteModels.swift`, `RegisterView.swift`
-
-### Deleted (3 files)
-`AgentService.swift`, `LibreChatAPI.swift`, `ConfigModels.swift`
-
-### Backend (new — ~1,630 lines)
-`backend/` — FastAPI app with auth, characters, conversations, personas, journals, gallery, config routers. SQLAlchemy models, Pydantic schemas, Alembic migrations, Dockerfile, docker-compose.yml, requirements.txt.
+| # | Gap | Status |
+|---|-----|--------|
+| 1 | Login deadlock fixes (6 items) | ✅ Done — merged into RoleVaultApp.swift |
+| 2 | Deploy to physical device | ❌ Blocked by signing error `0xe800801f` |
 
 ---
 
-## §2 — Audit Dimensions
+## §B — Overview
 
-For every file listed in §1, evaluate against these 5 dimensions:
-
-### A: Architecture Correctness
-Does this file conform to the pivot plan?
-
-- **AuthService** → hits RoleVaultAPI (port 8001), NOT LibreChat. Has register() + login(). No migrateUnscopedData().
-- **ChatService** → CRUD to RoleVaultAPI, inference to InferenceAPI (LM Studio :1234). No LibreChat endpoints.
-- **CharacterStore** → syncs to RoleVaultAPI. No AgentService references. No libreChatAgentId.
-- **ConfigService** → hits RoleVaultAPI `/api/config`. Returns inference URL + model list.
-- **TokenInterceptor** → refreshes against RoleVault API `/api/auth/refresh`. No LibreChat refresh.
-- **New API clients** → RoleVaultAPI has JWT injection + snake_case. InferenceAPI has no auth + OpenAI SSE.
-- **Deleted files** → AgentService, LibreChatAPI, ConfigModels are actually gone.
-- **Backend** → matches the schema plan (rolevault_* tables). Auth registers into LibreChat users table + rolevault_users.
-- **App routing** → RoleVaultApp includes RegisterView. Navigation works from login → register → home.
-
-### B: Scope Integrity
-Did the agent touch anything outside the allowed list from the original reactivity prompt §2?
-
-Allowed: the 4 reactivity views (ChatsGalleryView, ActivityCenterView, PersonaManagerView, ChatDetailView)
-Everything else is scope creep. Flag it but don't fail on it — the user accepted the drift.
-
-What to check:
-- Dead imports from deleted files (e.g., `import AgentService` anywhere left)
-- Stale references to `LibreChatAPI`
-- `libreChatAgentId` references still present anywhere
-
-### C: Reactivity Fix Quality (the actual task)
-For the 4 target views:
-
-- Pattern used: `.task(id: AuthService.shared.currentUser?.id)` — the fallback pattern
-- Does userId filtering exist? (`#Predicate { $0.userId == userId }` or equivalent)
-- Does `.task(id:)` re-fire correctly when currentUser changes?
-- Any .onAppear fetches that should have been removed still present?
-- Is there a clear data-flow: guard → fetch → populate → display?
-
-### D: Backend Completeness
-For the `backend/` tree:
-
-- Do routers exist for every domain? (auth, characters, conversations, personas, journals, gallery, config)
-- Do SQLAlchemy models map to the planned schema? (rolevault_users, rolevault_characters, etc.)
-- Do Pydantic schemas have create/update/response variants?
-- Is Alembic configured? (env.py exists, migration pending?)
-- Dockerfile complete? (multi-stage, non-root, healthcheck?)
-- docker-compose.yml complete? (networks, env vars, no host ports?)
-- Does auth router handle register→dual-insert (LibreChat users + rolevault_users)?
-- Does config endpoint return inference URL?
-
-### E: Build Integrity
-- `project.pbxproj` modified — were new files added to targets correctly?
-- xcodebuild succeeds?
-- No duplicate file entries?
-- Deleted files removed from all targets?
-- Any circular imports?
+Two deliverables. Do them in order — Sign in with Apple first, then the install fix. This is the **smallest possible implementation**: add Apple auth alongside existing email auth. Nothing is removed. Nothing is rewritten. Email login still works exactly as before.
 
 ---
 
-## §3 — Locked Decisions (from Original Prompt)
+## §1 — Backend: Apple Auth Endpoint
 
-These were the constraints on the reactivity fix. Audit whether they held:
+Working directory: `~/PROJECTS/rolevault/backend`
 
-1. Only edit the 4 files — **breached**, but accepted by user
-2. @Query preferred over .task(id:) — **partial** — agent used fallback for all 4
-3. userId filtering preserved — must confirm
-4. Sort order preserved — must confirm
-5. No new Swift packages — must confirm
-6. No project.yml changes — must confirm (project.pbxproj modified, not project.yml)
-7. No git commits — confirmed
+### §1.1 — DB Migration: add `apple_user_id` column
+
+Add one nullable column to the `rolevault.users` table:
+
+```sql
+ALTER TABLE rolevault.users ADD COLUMN apple_user_id TEXT UNIQUE;
+```
+
+Create a new Alembic migration file. The existing migration is at `alembic/versions/acf1d10fbf13_initial.py` — create the next one with:
+
+```bash
+uv run alembic revision --autogenerate -m "add_apple_user_id"
+```
+
+Then run it:
+
+```bash
+DATABASE_URL=postgresql+asyncpg://rolevault:rolevault@localhost:5432/rolevault \
+uv run alembic upgrade head
+```
+
+### §1.2 — Update `app/models.py`
+
+Add the column to the `User` class (inside the class body, with the other columns):
+
+```python
+apple_user_id = Column(String(255), unique=True, nullable=True)
+```
+
+### §1.3 — Add `pyjwt` dependency
+
+The backend needs to verify Apple's RS256-signed identity token. The existing `jose` library handles RS256, but we need `PyJWT` for its cleaner JWKS handling.
+
+Add to dependencies (if the project has a requirements.txt — if it uses uv with pyproject.toml, just install):
+
+```bash
+uv add pyjwt
+```
+
+If there's no pyproject.toml, just `pip install pyjwt`.
+
+### §1.4 — New endpoint: `POST /api/auth/apple`
+
+Add to `app/auth/router.py`. The endpoint:
+
+1. Accepts `{ "identity_token": "<Apple ID token string>" }`  
+2. Fetches Apple's public keys from `https://appleid.apple.com/auth/keys`  
+3. Verifies the identity token using `jwt.decode()` with those public keys, audience = `com.rolevault.app`, issuer = `https://appleid.apple.com`  
+4. Extracts `sub` (the user's stable Apple user ID) and `email` from the verified token  
+5. Looks up `rolevault.users` by `apple_user_id` — if found, returns a RoleVault JWT for that user  
+6. If not found, creates a NEW user in BOTH tables:  
+
+   **a)** `public.users` (LibreChat's table) — insert with `id = gen_random_uuid()`, `email = <from Apple token>`, `password = ''` (empty — this user won't use password login), `name = <Apple email username part>`, `username = <apple_user_id>`  
+   
+   **b)** `rolevault.users` — insert with `id` matching the LibreChat row, `email = <from Apple token>`, `display_name = <Apple email username part>`, `apple_user_id = <Apple sub>`  
+
+7. Returns `{ "access_token": "<RoleVault JWT>", "refresh_token": "...", "user": {...} }`  
+
+**Full code to add to `app/auth/router.py`:**
+
+```python
+import jwt as pyjwt  # alias to avoid conflict with jose
+import requests
+from app.schemas import AppleAuthRequest
+
+@router.post("/apple", response_model=TokenResponse)
+async def apple_auth(payload: AppleAuthRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Authenticate via Sign in with Apple.
+    Verifies the Apple identity token, then finds or creates a user.
+    """
+    # 1. Fetch Apple's public keys
+    jwks_resp = requests.get("https://appleid.apple.com/auth/keys", timeout=10)
+    jwks_resp.raise_for_status()
+    jwks = jwks_resp.json()
+
+    # 2. Decode the header to find the key ID
+    try:
+        unverified_header = pyjwt.get_unverified_header(payload.identity_token)
+    except pyjwt.PyJWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid identity token")
+
+    # 3. Find the matching key
+    kid = unverified_header.get("kid")
+    key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
+    if key is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Key not found in Apple JWKS")
+
+    public_key = pyjwt.algorithms.RSAAlgorithm.from_jwk(key)
+
+    # 4. Verify the token
+    try:
+        decoded = pyjwt.decode(
+            payload.identity_token,
+            public_key,
+            algorithms=["RS256"],
+            audience="com.rolevault.app",
+            issuer="https://appleid.apple.com",
+        )
+    except pyjwt.PyJWTError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Token verification failed: {str(e)}")
+
+    apple_user_id = decoded.get("sub")
+    email = decoded.get("email")
+    if not apple_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing sub claim in Apple token")
+
+    # 5. Look up by apple_user_id
+    result = await db.execute(select(User).where(User.apple_user_id == apple_user_id))
+    rv_user = result.scalar_one_or_none()
+
+    if rv_user:
+        # Existing user — return RoleVault JWT
+        access_token = create_access_token(rv_user.id)
+        refresh_token = create_refresh_token(rv_user.id)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user=_user_response(rv_user),
+        )
+
+    # 6. New user — create in both tables
+    display_name = email.split("@")[0] if email else "User"
+    new_id = uuid4()
+
+    lc_user = LibreChatUser(
+        id=new_id,
+        email=email or f"{apple_user_id}@appleid.apple",
+        password="",  # Apple users don't use password auth
+        name=display_name,
+        username=apple_user_id,
+    )
+    db.add(lc_user)
+    try:
+        await db.flush()
+    except (IntegrityError, ProgrammingError):
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email conflict in LibreChat")
+
+    rv_user = User(
+        id=new_id,
+        email=email or f"{apple_user_id}@appleid.apple",
+        display_name=display_name,
+        apple_user_id=apple_user_id,
+    )
+    db.add(rv_user)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists in RoleVault")
+
+    await db.refresh(rv_user)
+
+    access_token = create_access_token(rv_user.id)
+    refresh_token = create_refresh_token(rv_user.id)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=_user_response(rv_user),
+    )
+```
+
+### §1.5 — Add `AppleAuthRequest` schema to `app/schemas.py`
+
+```python
+class AppleAuthRequest(BaseModel):
+    identity_token: str
+```
+
+Add this next to the other auth schemas (after `RefreshRequest`).
+
+### §1.6 — Add imports to `app/auth/router.py`
+
+At the top, add alongside existing imports:
+
+```python
+import jwt as pyjwt
+import requests
+from app.schemas import AppleAuthRequest
+```
+
+And add `uuid4` to the existing uuid import if not already there (it is — `from uuid import uuid4` is line 1).
+
+### §1.7 — Verify
+
+```bash
+cd ~/PROJECTS/rolevault/backend
+DATABASE_URL="postgresql+asyncpg://rolevault:rolevault@localhost:5432/rolevault" \
+uv run uvicorn app.main:app --reload --port 8001
+
+# Check Swagger UI — /api/auth/apple should appear
+open http://localhost:8001/docs
+```
+
+---
+
+## §2 — iOS: Sign in with Apple Button
+
+Working directory: `~/PROJECTS/rolevault/ios`
+
+### §2.1 — Add capability to entitlements
+
+Edit `RoleVault/RoleVault.entitlements` — add the Sign in with Apple key:
+
+```xml
+<key>com.apple.developer.applesignin</key>
+<array>
+    <string>Default</string>
+</array>
+```
+
+So the file should look like:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>aps-environment</key>
+    <string>development</string>
+    <key>com.apple.developer.applesignin</key>
+    <array>
+        <string>Default</string>
+    </array>
+</dict>
+</plist>
+```
+
+### §2.2 — Add Sign in with Apple button to `LoginView`
+
+In `RoleVault/App/RoleVaultApp.swift`, inside `LoginView`'s `body`, add the Apple sign-in button AFTER the existing "Log In" button and BEFORE the "Don't have an account?" link.
+
+Add this state variable to `LoginView` (next to the other `@State` vars):
+
+```swift
+@State private var appleSignInInProgress = false
+```
+
+Add the button between the existing Log In button's closing `}` and the `NavigationLink`:
+
+```swift
+// Sign in with Apple
+SignInWithAppleButton(
+    .signIn,
+    onRequest: { request in
+        request.requestedScopes = [.fullName, .email]
+    },
+    onCompletion: { result in
+        Task { await handleAppleSignIn(result) }
+    }
+)
+.signInWithAppleButtonStyle(.black)
+.frame(height: 50)
+.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+```
+
+Add this import at the top of the file:
+
+```swift
+import AuthenticationServices
+```
+
+Add this method to `LoginView` (next to the `login()` and `isValidEmail()` methods):
+
+```swift
+private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) async {
+    switch result {
+    case .success(let authorization):
+        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let identityToken = credential.identityToken,
+              let tokenString = String(data: identityToken, encoding: .utf8) else {
+            errorMessage = "Failed to get Apple identity token"
+            showError = true
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            _ = try await AuthService.shared.signInWithApple(identityToken: tokenString)
+            HapticEngine.notification(.success)
+        } catch let apiError as APIError {
+            errorMessage = apiError.localizedDescription
+            showError = true
+            HapticEngine.notification(.error)
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+            HapticEngine.notification(.error)
+        }
+    case .failure(let error):
+        errorMessage = error.localizedDescription
+        showError = true
+        HapticEngine.notification(.error)
+    }
+}
+```
+
+### §2.3 — Add `signInWithApple` to `AuthService`
+
+In `RoleVault/API/AuthService.swift`, add this method (next to the existing `login()` method):
+
+```swift
+/// Sign in with Apple. Sends the identity token to the backend which verifies it and returns a RoleVault JWT.
+func signInWithApple(identityToken: String) async throws -> TokenResponse {
+    let body = try JSONEncoder().encode(["identity_token": identityToken])
+    let response: TokenResponse = try await api.request(
+        path: "/api/auth/apple",
+        method: "POST",
+        body: body
+    )
+
+    try KeychainManager.shared.saveJWT(response.accessToken)
+    try KeychainManager.shared.saveRefreshToken(response.refreshToken)
+
+    await MainActor.run {
+        isAuthenticated = true
+    }
+
+    await persistUserAccount(remoteUser: response.user)
+
+    return response
+}
+```
+
+Note: `api.request(path:method:body:)` likely exists on `RoleVaultAPI` for raw data requests. If it doesn't exist and only `api.post(path:body:)` exists, use that instead. The `post` method may require a `Decodable` body type — adapt accordingly. The key is: send `{"identity_token": "..."}` as JSON to `POST /api/auth/apple`, get back a TokenResponse.
+
+### §2.4 — Verify iOS builds
+
+```bash
+cd ~/PROJECTS/rolevault/ios
+xcodegen generate
+xcodebuild -scheme RoleVault -destination 'platform=iOS' build 2>&1 | grep "BUILD"
+```
+
+Must see: `** BUILD SUCCEEDED **`
+
+---
+
+## §3 — Fix Install Error (`0xe800801f`)
+
+The `project.yml` is configured for App Store distribution only. For local development / direct Xcode installs, switch to **Automatic signing** for debug builds.
+
+### §3.1 — Edit `project.yml`
+
+Change lines 31-33 from:
+
+```yaml
+CODE_SIGN_STYLE: Manual
+PROVISIONING_PROFILE_SPECIFIER: match AppStore com.rolevault.app
+CODE_SIGN_IDENTITY: Apple Distribution
+```
+
+To:
+
+```yaml
+CODE_SIGN_STYLE: Automatic
+```
+
+Remove the `PROVISIONING_PROFILE_SPECIFIER` and `CODE_SIGN_IDENTITY` lines entirely.
+
+### §3.2 — Regenerate and open
+
+```bash
+cd ~/PROJECTS/rolevault/ios
+xcodegen generate
+open RoleVault.xcodeproj
+```
+
+### §3.3 — In Xcode, set your team
+
+1. Click the RoleVault project in the sidebar  
+2. Select the "RoleVault" target → "Signing & Capabilities" tab  
+3. Under "Team", select your Apple Developer team (S58MT4ATKM or your personal team)  
+4. Check "Automatically manage signing" is ON  
+5. Xcode will auto-create a development provisioning profile that includes your connected iPhone  
+
+### §3.4 — Build and run to device
+
+Select your physical iPhone from the scheme dropdown → Cmd+R.
+
+**If it still fails:** Go to [developer.apple.com/account](https://developer.apple.com/account) → Certificates, Identifiers & Profiles → Devices → verify your iPhone's UDID is listed. If not, add it.
 
 ---
 
 ## §4 — Hard Walls
 
-- ❌ Don't trust any file at face value — verify every claim with rg/xcodebuild/ls
-- ❌ Don't write code — audit only
-- ❌ Don't read Swift source past what's needed for mechanical checks
-- ❌ Don't make git operations
+```
+❌ Do NOT remove email/password login — Apple auth is ADDED alongside, not replacing
+❌ Do NOT touch web client code or docs/user_next_prompt-web.md
+❌ Do NOT change the User model's existing columns — only ADD apple_user_id
+❌ Do NOT change the login endpoint — it stays exactly as-is
+❌ Do NOT commit or push — just apply changes and verify builds
+❌ Do NOT add new Swift packages via SPM
+❌ Do NOT change Info.plist
+❌ Do NOT touch fastlane/ configuration
+❌ No print() / NSLog() left in Swift files
+```
 
 ---
 
-## §5 — Verification Checklist (Mechanical)
-
-Run every check. Capture exact output. Mark PASS/FAIL.
-
-### Architecture Correctness
+## §5 — Verification Checklist
 
 ```
-1. LibreChat endpoint audit:
-   rg "librechat\|LibreChat\|LIBRECHAT" ios/RoleVault/API/AuthService.swift ios/RoleVault/API/ChatService.swift ios/RoleVault/API/ConfigService.swift ios/RoleVault/API/TokenInterceptor.swift
-   → Should only appear in comments/docs explaining the pivot, or in the backend reading LibreChat's users table
+1. Backend migration:
+   psql -h localhost -U rolevault -d rolevault -c "\d rolevault.users"
+   → apple_user_id column exists, type TEXT, nullable, UNIQUE
 
-2. LM Studio inference audit:
-   rg "chat/completions\|/v1/chat" ios/RoleVault/API/InferenceAPI.swift
-   → Must hit standard OpenAI path
+2. Backend starts:
+   cd ~/PROJECTS/rolevault/backend && DATABASE_URL="postgresql+asyncpg://rolevault:rolevault@localhost:5432/rolevault" uv run uvicorn app.main:app --port 8001 &
+   curl http://localhost:8001/health
+   → {"status":"ok",...}
 
-3. RoleVaultAPI target audit:
-   rg "8001\|rolevault.*api\|ROLEVAULT" ios/RoleVault/API/RoleVaultAPI.swift
-   → Must target port 8001
+3. Swagger shows new endpoint:
+   curl http://localhost:8001/docs
+   → /api/auth/apple appears in auth section
 
-4. AgentService deletion audit:
-   ls ios/RoleVault/API/AgentService.swift 2>&1
-   → Should return "No such file"
+4. iOS entitlements updated:
+   cat RoleVault/RoleVault.entitlements
+   → contains com.apple.developer.applesignin
 
-5. LibreChatAPI deletion audit:
-   ls ios/RoleVault/API/LibreChatAPI.swift 2>&1
-   → Should return "No such file"
+5. iOS project regenerates:
+   cd ~/PROJECTS/rolevault/ios && xcodegen generate
+   → Success
 
-6. libreChatAgentId audit:
-   rg "libreChatAgentId\|libreChatAgentId" ios/RoleVault/ --include="*.swift"
-   → Should return 0 hits (or only in comments)
+6. iOS builds:
+   xcodebuild -scheme RoleVault -destination 'platform=iOS' build 2>&1 | grep "BUILD"
+   → ** BUILD SUCCEEDED **
 
-7. AgentService reference audit:
-   rg "AgentService" ios/RoleVault/ --include="*.swift"
-   → Should return 0 hits
-```
+7. LoginView renders Sign in with Apple button:
+   (visual check in Xcode Preview or on device)
+   → Black "Sign in with Apple" button visible below the Log In button
 
-### Reactivity Fix Quality
+8. Existing email login still works:
+   → Email + password login flow unchanged
 
-```
-8. Reactivity pattern audit (all 4 views):
-   rg "\.task\(id:.*currentUser\|@Query" ios/RoleVault/Views/Chats/ChatsGalleryView.swift ios/RoleVault/Views/Activity/ActivityCenterView.swift ios/RoleVault/Views/Profile/PersonaManagerView.swift ios/RoleVault/Views/Chats/ChatDetailView.swift
-   → Each view must show reactive trigger
+9. Xcode signing set to Automatic:
+   Open project in Xcode → RoleVault target → Signing & Capabilities
+   → "Automatically manage signing" is ON, team is set
 
-9. userId filtering audit (all 4 views):
-   rg "userId\|ownerUserId\|#Predicate.*userId" ios/RoleVault/Views/Chats/ChatsGalleryView.swift ios/RoleVault/Views/Activity/ActivityCenterView.swift ios/RoleVault/Views/Profile/PersonaManagerView.swift ios/RoleVault/Views/Chats/ChatDetailView.swift
-   → userId scoping must exist
-
-10. Orphaned .onAppear data fetches:
-    rg "\.onAppear.*\{.*fetch\|\.onAppear.*\{.*load" ios/RoleVault/Views/Chats/ChatsGalleryView.swift ios/RoleVault/Views/Activity/ActivityCenterView.swift ios/RoleVault/Views/Profile/PersonaManagerView.swift
-    → Should return 0 hits for data-load blocks (UI setup blocks are fine)
-```
-
-### Backend Completeness
-
-```
-11. Backend router inventory:
-    ls backend/app/*/router.py backend/app/auth/router.py 2>/dev/null
-    → Expected: auth, characters, conversations, personas, journals, gallery, config_endpoint
-
-12. Backend models audit:
-    rg "class.*\(Base\)" backend/app/models.py
-    → Expected: User, Character, CharacterCustomization, Conversation, Message, Persona, JournalEntry, GalleryMoment (or equivalent names)
-
-13. Backend Dockerfile audit:
-    grep -c "FROM\|EXPOSE\|HEALTHCHECK\|CMD\|ENTRYPOINT" backend/Dockerfile
-    → Expected: at least 5 matches (complete Dockerfile)
-
-14. Backend compose audit:
-    rg "8001\|networks:\|environment:" backend/docker-compose.yml
-    → Expected: port 8001, network config, env vars
-
-15. Alembic configuration:
-    ls backend/alembic/env.py backend/alembic.ini 2>/dev/null
-    → Both must exist
-```
-
-### Build Integrity
-
-```
-16. project.pbxproj has new files:
-    rg "RoleVaultAPI.swift\|InferenceAPI.swift\|RemoteModels.swift\|RegisterView.swift" ios/RoleVault.xcodeproj/project.pbxproj
-    → All 4 new files must appear
-
-17. project.pbxproj missing deleted files:
-    rg "AgentService.swift\|LibreChatAPI.swift\|ConfigModels.swift" ios/RoleVault.xcodeproj/project.pbxproj
-    → Should return 0 hits (or commented out)
-
-18. Compilation:
-    cd ios && xcodegen generate 2>&1 | tail -3
-    xcodebuild -scheme RoleVault -destination 'platform=iOS Simulator,name=iPhone 16' build 2>&1 | grep "BUILD"
-    → Expected: ** BUILD SUCCEEDED **
-
-19. No circular imports:
-    rg "import.*AuthService\|import.*ChatService\|import.*CharacterStore" ios/RoleVault/API/*.swift
-    → Flag any cross-API import that creates a cycle
+10. App installs on device:
+    Cmd+R to physical iPhone
+    → No 0xe800801f error, app launches
 ```
 
 ---
 
 ## §6 — Self-Check
 
-- [ ] Every mechanical check in §5 run with exact output captured
-- [ ] Dead code search done (stale imports, orphaned references)
-- [ ] Backend files actually exist on disk (not just in git index)
-- [ ] xcodebuild passes without errors or warnings
-- [ ] No assumptions — every claim backed by rg/ls/xcodebuild output
+```
+- [ ] Backend model updated with apple_user_id column
+- [ ] Alembic migration created and applied
+- [ ] pyjwt installed
+- [ ] POST /api/auth/apple endpoint exists and appears in /docs
+- [ ] AppleAuthRequest schema added to schemas.py
+- [ ] iOS entitlements updated with Sign in with Apple capability
+- [ ] SignInWithAppleButton added to LoginView (after Log In, before sign up link)
+- [ ] handleAppleSignIn method added to LoginView
+- [ ] signInWithApple method added to AuthService
+- [ ] import AuthenticationServices added to RoleVaultApp.swift
+- [ ] email/password login completely untouched — zero lines removed
+- [ ] project.yml switched to CODE_SIGN_STYLE: Automatic
+- [ ] xcodebuild passes with BUILD SUCCEEDED
+- [ ] No print()/NSLog() in modified Swift files
+- [ ] No files touched outside the ones listed in this prompt
+```
 
 ---
 
 ## §7 — Bring-Back: Overwrite `docs/user_bring_back.md`
 
-After completing the audit, **overwrite** `~/PROJECTS/rolevault/docs/user_bring_back.md` with:
+After completing everything, **overwrite** `~/PROJECTS/rolevault/docs/user_bring_back.md`:
 
 ```
-## End-to-End Audit Report
+## Sign in with Apple + Install Fix Report
 
 ### Model Used
-<model name> (e.g., kimi k2.6, gpt-5.5, etc.)
+Kimi Code CLI
 
-### Architecture Correctness
-| # | Check | Result | Evidence |
-|---|-------|--------|----------|
-| 1 | LibreChat endpoint audit | ✅/❌ | <rg output excerpt> |
-| 2 | LM Studio inference audit | ✅/❌ | <rg output excerpt> |
-| ... | ... | ... | ... |
+### Changes Applied
+| # | Change | File | Status |
+|---|--------|------|--------|
+| 1 | apple_user_id DB column + migration | models.py + alembic migration | ✅/❌ |
+| 2 | POST /api/auth/apple endpoint | auth/router.py | ✅/❌ |
+| 3 | AppleAuthRequest schema | schemas.py | ✅/❌ |
+| 4 | pyjwt dependency added | requirements/pyproject | ✅/❌ |
+| 5 | Sign in with Apple entitlement | RoleVault.entitlements | ✅/❌ |
+| 6 | Sign in with Apple button in LoginView | RoleVaultApp.swift | ✅/❌ |
+| 7 | signInWithApple method in AuthService | AuthService.swift | ✅/❌ |
+| 8 | project.yml → Automatic signing | project.yml | ✅/❌ |
 
-### Scope Integrity
-- Dead imports found: <list or "none">
-- Stale libreChatAgentId references: <count or "none">
-- Other scope issues: <list or "none">
+### Verification Results
+| # | Check | Result | Output |
+|---|-------|--------|--------|
+| 1 | DB column exists | ✅/❌ | <psql output> |
+| 2 | Backend starts | ✅/❌ | <curl health> |
+| 3 | /docs shows /api/auth/apple | ✅/❌ | <screenshot or curl> |
+| 4 | Entitlements updated | ✅/❌ | <cat output> |
+| 5 | xcodegen succeeds | ✅/❌ | |
+| 6 | iOS builds | ✅/❌ | ** BUILD SUCCEEDED ** |
+| 7 | Sign in button visible | ✅/❌ | <visual confirmation> |
+| 8 | Email login still works | ✅/❌ | |
+| 9 | Automatic signing ON | ✅/❌ | |
+| 10 | Installs on device | ✅/❌ | <no 0xe800801f> |
 
-### Reactivity Fix Quality
-| # | Check | Result | Evidence |
-|---|-------|--------|----------|
-| 8 | Reactivity pattern audit | ✅/❌ | <per-view summary> |
-| 9 | userId filtering audit | ✅/❌ | <rg output excerpt> |
-| 10 | Orphaned .onAppear | ✅/❌ | <rg output excerpt> |
-
-### Backend Completeness
-| # | Check | Result | Evidence |
-|---|-------|--------|----------|
-| 11 | Router inventory | ✅/❌ | <ls output> |
-| 12 | Models audit | ✅/❌ | <rg output> |
-| ... | ... | ... | ... |
-
-### Build Integrity
-| # | Check | Result | Evidence |
-|---|-------|--------|----------|
-| 16 | pbxproj new files | ✅/❌ | <rg output> |
-| 17 | pbxproj deleted files | ✅/❌ | <rg output> |
-| 18 | Compilation | ✅/❌ | <build output> |
-| 19 | Circular imports | ✅/❌ | <rg output> |
-
-### Findings Summary
-- Critical issues (block commit): <list or "none">
-- High issues (fix before push): <list or "none">
-- Medium issues (fix before TestFlight): <list or "none">
-- Low issues (cosmetic/deferred): <list or "none">
+### Deviations
+- <none, or list any intentional deviations from this spec>
 
 ### Overall Verdict
-PASS — build is clean, no regressions, proceed to commit
-PASS-WITH-ISSUES — build passes but found issues above
-FAIL — build fails or found critical issues
+PASS | PASS-WITH-NITS | FAIL
 
 ### Kimi Session
 Session ID: <uuid>

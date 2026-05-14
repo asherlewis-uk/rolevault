@@ -85,6 +85,10 @@ node_modules/
 docs/user_next_prompt.md
 docs/user_bring_back.md
 
+# RoleVault web rotation files
+docs/user_next_prompt-web.md
+docs/user_bring_back-web.md
+
 # Python
 __pycache__/
 *.pyc

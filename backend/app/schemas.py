@@ -42,6 +42,10 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class AppleAuthRequest(BaseModel):
+    identity_token: str
+
+
 # ---------------------------------------------------------------------------
 # Character schemas
 # ---------------------------------------------------------------------------

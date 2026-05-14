@@ -19,6 +19,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     display_name = Column(String(255), nullable=True)
     avatar_url = Column(Text, nullable=True)
+    apple_user_id = Column(String(255), unique=True, nullable=True)
     created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
 

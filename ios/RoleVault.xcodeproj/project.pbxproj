@@ -448,7 +448,7 @@
 				TargetAttributes = {
 					5A8F43499211026A65E08B10 = {
 						DevelopmentTeam = S58MT4ATKM;
-						ProvisioningStyle = Manual;
+						ProvisioningStyle = Automatic;
 					};
 					C0ABAEFE0E2436C45E6B7B2D = {
 						TestTargetID = 5A8F43499211026A65E08B10;
@@ -771,8 +771,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = RoleVault/RoleVault.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S58MT4ATKM;
 				INFOPLIST_FILE = RoleVault/Info.plist;
@@ -782,7 +782,6 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rolevault.app;
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.rolevault.app";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -795,8 +794,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = RoleVault/RoleVault.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S58MT4ATKM;
 				INFOPLIST_FILE = RoleVault/Info.plist;
@@ -806,7 +805,6 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rolevault.app;
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.rolevault.app";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = 1;
