@@ -15,7 +15,8 @@ platform :ios do
     
     build_app(
       scheme: "RoleVault",
-      export_method: "app-store"
+      export_method: "app-store",
+      xcargs: "CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER=match%20AppStore%20com.rolevault.app"
     )
     
     upload_to_testflight(skip_waiting_for_build_processing: true)
