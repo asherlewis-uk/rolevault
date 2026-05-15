@@ -28,7 +28,13 @@ targets:
         TARGETED_DEVICE_FAMILY: '1'
         ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: true
         DEVELOPMENT_TEAM: S58MT4ATKM
+    configs:
+      Debug:
         CODE_SIGN_STYLE: Automatic
+      Release:
+        CODE_SIGN_STYLE: Manual
+        PROVISIONING_PROFILE_SPECIFIER: match AppStore com.rolevault.app
+        CODE_SIGN_IDENTITY: Apple Distribution
     info:
       path: RoleVault/Info.plist
       properties:
