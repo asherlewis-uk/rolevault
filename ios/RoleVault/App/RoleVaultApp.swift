@@ -95,14 +95,15 @@ struct MainTabView: View {
 }
 
 struct LoginView: View {
-    @State private var email: String = ""
-    @State private var password: String = ""
-    @State private var isPasswordVisible: Bool = false
-    @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showError = false
     @State private var showBackendConfig = false
     @State private var appleSignInInProgress = false
+    @State private var magicLinkEmail: String = ""
+    @State private var showMagicLink = false
+    @State private var magicLinkSent = false
+    @State private var magicLinkToken: String?
+    @State private var magicLinkLoading = false
 
     var body: some View {
         NavigationStack {
@@ -122,62 +123,6 @@ struct LoginView: View {
 
                     LiquidGlassPanel(cornerRadius: 24) {
                         VStack(spacing: 16) {
-                            TextField("Email", text: $email)
-                                .textContentType(.emailAddress)
-                                .keyboardType(.emailAddress)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-                                .padding()
-                                .background(.thinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                            ZStack(alignment: .trailing) {
-                                Group {
-                                    if isPasswordVisible {
-                                        TextField("Password", text: $password)
-                                            .textContentType(.password)
-                                    } else {
-                                        SecureField("Password", text: $password)
-                                            .textContentType(.password)
-                                    }
-                                }
-                                .padding()
-                                .padding(.trailing, 36)
-
-                                Button {
-                                    isPasswordVisible.toggle()
-                                } label: {
-                                    Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
-                                        .foregroundStyle(.secondary)
-                                }
-                                .padding(.trailing, 16)
-                            }
-                            .background(.thinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                            Button {
-                                Task { await login() }
-                            } label: {
-                                HStack {
-                                    if isLoading {
-                                        ProgressView()
-                                            .tint(.white)
-                                    } else {
-                                        Text("Log In")
-                                            .font(.headline)
-                                    }
-                                }
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(.tint)
-                                )
-                                .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1.0)
-                            }
-                            .disabled(email.isEmpty || password.isEmpty || isLoading)
-
                             // Sign in with Apple
                             SignInWithAppleButton(
                                 .signIn,
@@ -192,12 +137,101 @@ struct LoginView: View {
                             .frame(height: 50)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                            NavigationLink {
-                                RegisterView()
-                            } label: {
-                                Text("Don't have an account? Sign up")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                            // Magic Link Email Sign-In
+                            if !showMagicLink {
+                                Button {
+                                    showMagicLink = true
+                                } label: {
+                                    Text("Sign in with Email")
+                                        .font(.headline)
+                                        .foregroundStyle(.primary)
+                                        .frame(maxWidth: .infinity)
+                                        .padding()
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .stroke(.secondary.opacity(0.3), lineWidth: 1)
+                                        )
+                                }
+                            } else {
+                                VStack(spacing: 12) {
+                                    TextField("Email", text: $magicLinkEmail)
+                                        .textContentType(.emailAddress)
+                                        .keyboardType(.emailAddress)
+                                        .autocorrectionDisabled()
+                                        .textInputAutocapitalization(.never)
+                                        .padding()
+                                        .background(.thinMaterial)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                                    if magicLinkSent {
+                                        Text("Check your email for the magic link.")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .multilineTextAlignment(.center)
+
+                                        TextField("Paste token", text: Binding(
+                                            get: { magicLinkToken ?? "" },
+                                            set: { magicLinkToken = $0.isEmpty ? nil : $0 }
+                                        ))
+                                        .font(.system(.caption, design: .monospaced))
+                                        .padding()
+                                        .background(.thinMaterial)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                                        Button {
+                                            Task { await verifyMagicLink() }
+                                        } label: {
+                                            HStack {
+                                                if magicLinkLoading {
+                                                    ProgressView().tint(.white)
+                                                } else {
+                                                    Text("Verify & Sign In")
+                                                        .font(.headline)
+                                                }
+                                            }
+                                            .foregroundStyle(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .padding()
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                    .fill(.tint)
+                                            )
+                                            .opacity(magicLinkToken == nil ? 0.5 : 1.0)
+                                        }
+                                        .disabled(magicLinkToken == nil || magicLinkLoading)
+                                    } else {
+                                        Button {
+                                            Task { await requestMagicLink() }
+                                        } label: {
+                                            HStack {
+                                                if magicLinkLoading {
+                                                    ProgressView().tint(Color.accentColor)
+                                                } else {
+                                                    Text("Send Magic Link")
+                                                        .font(.headline)
+                                                }
+                                            }
+                                            .foregroundStyle(.tint)
+                                            .frame(maxWidth: .infinity)
+                                            .padding()
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                    .stroke(.tint, lineWidth: 1.5)
+                                            )
+                                            .opacity(magicLinkEmail.isEmpty ? 0.5 : 1.0)
+                                        }
+                                        .disabled(magicLinkEmail.isEmpty || magicLinkLoading)
+
+                                        Button {
+                                            showMagicLink = false
+                                            magicLinkEmail = ""
+                                        } label: {
+                                            Text("Cancel")
+                                                .font(.subheadline)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -228,37 +262,6 @@ struct LoginView: View {
         }
     }
 
-    private func login() async {
-        guard isValidEmail(email) else {
-            errorMessage = "Please enter a valid email address"
-            showError = true
-            HapticEngine.notification(.error)
-            return
-        }
-
-        isLoading = true
-        defer { isLoading = false }
-        do {
-            _ = try await AuthService.shared.login(email: email, password: password)
-            HapticEngine.notification(.success)
-        } catch let apiError as APIError {
-            switch apiError {
-            case .networkError, .offline:
-                errorMessage = "Cannot reach server. Check Backend URL in Settings (gear icon)."
-            case .unauthorized, .serverError(401, _):
-                errorMessage = "Invalid email or password."
-            default:
-                errorMessage = apiError.localizedDescription
-            }
-            showError = true
-            HapticEngine.notification(.error)
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
-            HapticEngine.notification(.error)
-        }
-    }
-
     private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) async {
         switch result {
         case .success(let authorization):
@@ -269,8 +272,8 @@ struct LoginView: View {
                 showError = true
                 return
             }
-            isLoading = true
-            defer { isLoading = false }
+            appleSignInInProgress = true
+            defer { appleSignInInProgress = false }
             do {
                 _ = try await AuthService.shared.signInWithApple(identityToken: tokenString)
                 HapticEngine.notification(.success)
@@ -284,6 +287,49 @@ struct LoginView: View {
                 HapticEngine.notification(.error)
             }
         case .failure(let error):
+            errorMessage = error.localizedDescription
+            showError = true
+            HapticEngine.notification(.error)
+        }
+    }
+
+    private func requestMagicLink() async {
+        guard isValidEmail(magicLinkEmail) else {
+            errorMessage = "Please enter a valid email address"
+            showError = true
+            return
+        }
+        magicLinkLoading = true
+        defer { magicLinkLoading = false }
+        do {
+            let response: MagicLinkResponse = try await AuthService.shared.requestMagicLink(email: magicLinkEmail)
+            // Auto-fill token from dev response
+            magicLinkToken = response.token
+            magicLinkSent = true
+            HapticEngine.notification(.success)
+        } catch let apiError as APIError {
+            errorMessage = apiError.localizedDescription
+            showError = true
+            HapticEngine.notification(.error)
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+            HapticEngine.notification(.error)
+        }
+    }
+
+    private func verifyMagicLink() async {
+        guard let token = magicLinkToken else { return }
+        magicLinkLoading = true
+        defer { magicLinkLoading = false }
+        do {
+            _ = try await AuthService.shared.verifyMagicLink(token: token)
+            HapticEngine.notification(.success)
+        } catch let apiError as APIError {
+            errorMessage = apiError.localizedDescription
+            showError = true
+            HapticEngine.notification(.error)
+        } catch {
             errorMessage = error.localizedDescription
             showError = true
             HapticEngine.notification(.error)
