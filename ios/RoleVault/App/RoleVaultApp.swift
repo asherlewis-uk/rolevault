@@ -20,6 +20,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         AuthService.shared.checkAuth()
+        Task {
+            try? await ConfigService.shared.fetchConfig()
+        }
         return true
     }
 }

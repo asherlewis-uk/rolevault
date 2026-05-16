@@ -86,8 +86,8 @@ final class KeychainManager {
 }
 
 extension KeychainManager {
-    static let jwtAccount = "librechat_jwt"
-    static let refreshAccount = "librechat_refresh"
+    static let jwtAccount = "rolevault_access"
+    static let refreshAccount = "rolevault_refresh"
 
     func saveJWT(_ token: String) throws {
         try save(token: token, for: Self.jwtAccount)

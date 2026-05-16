@@ -3,7 +3,7 @@ import Foundation
 @Observable
 final class ChatService {
     static let shared = ChatService()
-    static var defaultModel = "gpt-4o"
+    static var defaultModel = ""  // set from backend config; empty until fetched
     private let api = RoleVaultAPI.shared
     private let inference = InferenceAPI.shared
     private let decoder: JSONDecoder
@@ -52,6 +52,11 @@ final class ChatService {
         model: String? = nil
     ) -> AsyncThrowingStream<ChatStreamEvent, Error> {
         let resolvedModel = model ?? ChatService.defaultModel
+        guard !resolvedModel.isEmpty else {
+            return AsyncThrowingStream { continuation in
+                continuation.finish(throwing: APIError.serverError(500, "No model configured. Check backend connection."))
+            }
+        }
         let request = ChatRequest(
             model: resolvedModel,
             messages: messages,
@@ -150,6 +155,9 @@ final class ChatService {
         model: String? = nil
     ) async throws -> ChatMessage {
         let resolvedModel = model ?? ChatService.defaultModel
+        guard !resolvedModel.isEmpty else {
+            throw APIError.serverError(500, "No model configured. Check backend connection.")
+        }
         let request = ChatRequest(
             model: resolvedModel,
             messages: messages,

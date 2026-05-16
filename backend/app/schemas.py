@@ -46,6 +46,14 @@ class AppleAuthRequest(BaseModel):
     identity_token: str
 
 
+class MagicLinkRequest(BaseModel):
+    email: EmailStr
+
+
+class MagicLinkVerifyRequest(BaseModel):
+    token: str
+
+
 # ---------------------------------------------------------------------------
 # Character schemas
 # ---------------------------------------------------------------------------

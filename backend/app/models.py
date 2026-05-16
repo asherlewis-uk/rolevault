@@ -186,3 +186,15 @@ class GalleryMoment(Base):
     user = relationship("User", back_populates="gallery_moments")
     character = relationship("Character", back_populates="gallery_moments")
     conversation = relationship("Conversation", back_populates="gallery_moments")
+
+
+class MagicLinkToken(Base):
+    __tablename__ = "magic_link_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(255), nullable=False, index=True)
+    token = Column(String(128), unique=True, nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("rolevault.users.id", ondelete="SET NULL"), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)

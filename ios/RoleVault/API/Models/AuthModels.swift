@@ -5,11 +5,15 @@ struct LoginRequest: Codable {
     let password: String
 }
 
-struct RegisterRequest: Codable {
-    let email: String
-    let password: String
-    let displayName: String?
-    let avatarUrl: String?
+struct MagicLinkResponse: Codable {
+    let detail: String
+    let token: String
+    let expiresAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case detail, token
+        case expiresAt = "expires_at"
+    }
 }
 
 struct TokenResponse: Codable {

@@ -104,7 +104,7 @@ final class Character {
 
     // MARK: - Computed Prompt (Base Values)
 
-    /// Combines all base personality fields into a single system prompt string for LibreChat.
+    /// Combines all base personality fields into a single system prompt string.
     /// To get the per-user effective prompt, use `CharacterStore.effectiveSystemPrompt(character:forUser:)`
     /// or construct `MergedCharacterTraits(base:customization:).formattedSystemPrompt`.
     var formattedSystemPrompt: String {

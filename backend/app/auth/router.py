@@ -9,9 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
+import secrets
+from datetime import datetime, timedelta, timezone
+
 from app.database import get_db
-from app.models import User, LibreChatUser
-from app.schemas import UserCreate, LoginRequest, TokenResponse, RefreshRequest, UserResponse, AppleAuthRequest
+from app.models import User, LibreChatUser, MagicLinkToken
+from app.schemas import (
+    UserCreate, LoginRequest, TokenResponse, RefreshRequest,
+    UserResponse, AppleAuthRequest, MagicLinkRequest, MagicLinkVerifyRequest,
+)
 from app.auth.utils import (
     hash_password,
     verify_password,
@@ -257,6 +263,132 @@ async def apple_auth(payload: AppleAuthRequest, db: AsyncSession = Depends(get_d
     except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists in RoleVault")
+
+    await db.refresh(rv_user)
+
+    access_token = create_access_token(rv_user.id)
+    refresh_token = create_refresh_token(rv_user.id)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=_user_response(rv_user),
+    )
+
+
+@router.post("/magic-link/request")
+async def request_magic_link(payload: MagicLinkRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Request a magic link. Generates a single-use token valid for 15 minutes.
+    In dev mode the token is returned in the response body.
+    Future: send via Resend SMTP.
+    """
+    email_lower = payload.email.lower().strip()
+
+    # Generate cryptographically random token
+    token = secrets.token_hex(32)
+
+    # Check if a user already exists with this email
+    result = await db.execute(select(User).where(User.email == email_lower))
+    existing_user = result.scalar_one_or_none()
+
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+
+    magic = MagicLinkToken(
+        email=email_lower,
+        token=token,
+        user_id=existing_user.id if existing_user else None,
+        expires_at=expires_at,
+    )
+    db.add(magic)
+    await db.commit()
+
+    return {
+        "detail": "Magic link sent. Check your email.",
+        "token": token,  # inline in dev; remove in production
+        "expires_at": expires_at.isoformat(),
+    }
+
+
+@router.post("/magic-link/verify", response_model=TokenResponse)
+async def verify_magic_link(payload: MagicLinkVerifyRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Verify a magic link token. If valid, returns JWT pair.
+    Creates user on first use if no account exists for that email.
+    """
+    now = datetime.now(timezone.utc)
+
+    # Find valid, unused, non-expired token
+    result = await db.execute(
+        select(MagicLinkToken).where(
+            MagicLinkToken.token == payload.token,
+            MagicLinkToken.used == False,
+            MagicLinkToken.expires_at > now,
+        )
+    )
+    magic = result.scalar_one_or_none()
+
+    if magic is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired magic link",
+        )
+
+    # Mark token as used immediately
+    magic.used = True
+    await db.flush()
+
+    # Find or create user
+    email_lower = magic.email.lower().strip()
+    result = await db.execute(select(User).where(User.email == email_lower))
+    rv_user = result.scalar_one_or_none()
+
+    if rv_user:
+        # Existing user — return JWT
+        access_token = create_access_token(rv_user.id)
+        refresh_token = create_refresh_token(rv_user.id)
+        await db.commit()
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user=_user_response(rv_user),
+        )
+
+    # New user — create in both tables (same pattern as Apple auth)
+    display_name = email_lower.split("@")[0]
+    new_id = uuid4()
+
+    lc_user = LibreChatUser(
+        id=new_id,
+        email=email_lower,
+        password="",  # magic link users don't have passwords
+        name=display_name,
+        username=email_lower.split("@")[0],
+    )
+    db.add(lc_user)
+    try:
+        await db.flush()
+    except (IntegrityError, ProgrammingError):
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email conflict in LibreChat",
+        )
+
+    rv_user = User(
+        id=new_id,
+        email=email_lower,
+        display_name=display_name,
+    )
+    db.add(rv_user)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already exists in RoleVault",
+        )
 
     await db.refresh(rv_user)
 

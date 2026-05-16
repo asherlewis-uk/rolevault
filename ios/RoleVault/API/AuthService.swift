@@ -35,10 +35,16 @@ final class AuthService {
         return response
     }
 
-    /// Authenticate with email and password, store tokens in Keychain, persist user account.
-    func login(email: String, password: String) async throws -> TokenResponse {
-        let request = LoginRequest(email: email, password: password)
-        let response: TokenResponse = try await api.post(path: "/api/auth/login", body: request)
+    /// Request a magic link. Returns the token inline in dev mode.
+    func requestMagicLink(email: String) async throws -> MagicLinkResponse {
+        let body = ["email": email]
+        return try await api.post(path: "/api/auth/magic-link/request", body: body)
+    }
+
+    /// Verify a magic link token and authenticate.
+    func verifyMagicLink(token: String) async throws -> TokenResponse {
+        let body = ["token": token]
+        let response: TokenResponse = try await api.post(path: "/api/auth/magic-link/verify", body: body)
 
         try KeychainManager.shared.saveJWT(response.accessToken)
         try KeychainManager.shared.saveRefreshToken(response.refreshToken)
@@ -52,10 +58,10 @@ final class AuthService {
         return response
     }
 
-    /// Register a new account, store tokens in Keychain, persist user account.
-    func register(email: String, password: String, displayName: String?) async throws -> TokenResponse {
-        let request = RegisterRequest(email: email, password: password, displayName: displayName, avatarUrl: nil)
-        let response: TokenResponse = try await api.post(path: "/api/auth/register", body: request)
+    /// Authenticate with email and password, store tokens in Keychain, persist user account.
+    func login(email: String, password: String) async throws -> TokenResponse {
+        let request = LoginRequest(email: email, password: password)
+        let response: TokenResponse = try await api.post(path: "/api/auth/login", body: request)
 
         try KeychainManager.shared.saveJWT(response.accessToken)
         try KeychainManager.shared.saveRefreshToken(response.refreshToken)

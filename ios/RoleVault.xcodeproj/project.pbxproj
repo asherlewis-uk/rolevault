@@ -18,7 +18,6 @@
 		1ACD05ED3AECCC461134D4FC /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A220EC154CDB4745DDF8BA01 /* APIError.swift */; };
 		1B1ADA1B4FEE675FD9B54A97 /* ActivityCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939B3D8CEBBCBDEBE892088D /* ActivityCenterView.swift */; };
 		23CC52F9592DFA8923F7681B /* RoleVaultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47F59D375384BAD0CB61A23B /* RoleVaultTests.swift */; };
-		2815BA30B993D18F9F60B2E6 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC07807CCB4A9147E1F339F /* RegisterView.swift */; };
 		2C168563DA6F1DB3DBB9F1AC /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC5C5DFBE7CAC3E6D412EC0E /* ProfileView.swift */; };
 		34548A41886947DA6E2BA484 /* CategoryPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE40B608E18388024EC0558C /* CategoryPill.swift */; };
 		351CC358908CF01C39829D65 /* PersonaManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC96609715CA90B3B9F1B77 /* PersonaManagerView.swift */; };
@@ -97,7 +96,6 @@
 		1363FB88D82845EEAEE7A6F7 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
 		165D657EBB50B0C628E274B8 /* InferenceAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceAPI.swift; sourceTree = "<group>"; };
 		1A3B8A041DF02255F4F62E24 /* ConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigService.swift; sourceTree = "<group>"; };
-		1BC07807CCB4A9147E1F339F /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
 		1F7A7C615D6ABF0C7809E13C /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
 		24869795103D0A7213AC4AED /* MessageInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInputBar.swift; sourceTree = "<group>"; };
 		2551AAAA1A4ABB18CC286B36 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
@@ -265,7 +263,6 @@
 		B56A3C638B520E24DA9AEEA7 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
-				1BC07807CCB4A9147E1F339F /* RegisterView.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -448,7 +445,6 @@
 				TargetAttributes = {
 					5A8F43499211026A65E08B10 = {
 						DevelopmentTeam = S58MT4ATKM;
-						ProvisioningStyle = Automatic;
 					};
 					C0ABAEFE0E2436C45E6B7B2D = {
 						TestTargetID = 5A8F43499211026A65E08B10;
@@ -545,7 +541,6 @@
 				351CC358908CF01C39829D65 /* PersonaManagerView.swift in Sources */,
 				2C168563DA6F1DB3DBB9F1AC /* ProfileView.swift in Sources */,
 				57EAF37D2D12B1EBFA897EB1 /* ProfileViewModel.swift in Sources */,
-				2815BA30B993D18F9F60B2E6 /* RegisterView.swift in Sources */,
 				9BC5DE1336C69812072A4F47 /* RemoteModels.swift in Sources */,
 				09B73FB7D07A2936E46FE99A /* RoleVaultAPI.swift in Sources */,
 				8AFA0FBAE8AF08537F7719C7 /* RoleVaultApp.swift in Sources */,
@@ -771,8 +766,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = RoleVault/RoleVault.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S58MT4ATKM;
 				INFOPLIST_FILE = RoleVault/Info.plist;
@@ -782,6 +777,7 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rolevault.app;
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.rolevault.app";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = 1;
