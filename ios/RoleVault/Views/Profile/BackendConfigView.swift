@@ -1,5 +1,11 @@
 import SwiftUI
 
+struct HealthResponse: Codable {
+    let status: String
+    let timestamp: String
+    let service: String
+}
+
 struct BackendConfigView: View {
     @State private var apiURLString: String = ""
     @State private var inferenceURLString: String = ""
@@ -14,14 +20,14 @@ struct BackendConfigView: View {
 
             Form {
                 Section("RoleVault Server") {
-                    TextField("http://localhost:8001", text: $apiURLString)
+                    TextField("https://backend.asherlewis.online", text: $apiURLString)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
                 }
 
                 Section("Inference Server") {
-                    TextField("http://localhost:1234", text: $inferenceURLString)
+                    TextField("https://api.asherlewis.online", text: $inferenceURLString)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -87,9 +93,9 @@ struct BackendConfigView: View {
         InferenceAPI.shared.baseURL = inferenceURLString.trimmingCharacters(in: .whitespaces)
 
         do {
-            let config = try await ConfigService.shared.fetchConfig()
+            // Test backend health (public, no auth required)
+            let _: HealthResponse = try await RoleVaultAPI.shared.get(path: "/health")
             await MainActor.run {
-                serverConfig = config
                 testSuccess = true
                 showTestResult = true
             }

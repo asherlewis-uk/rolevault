@@ -16,7 +16,7 @@ final class InferenceAPI {
     private let encoder: JSONEncoder
 
     private init() {
-        self.baseURL = UserDefaults.standard.string(forKey: "inference_api_url") ?? "http://localhost:1234"
+        self.baseURL = UserDefaults.standard.string(forKey: "inference_api_url") ?? "https://api.asherlewis.online"
         self.session = URLSession.shared
         self.decoder = JSONDecoder()
         self.encoder = JSONEncoder()

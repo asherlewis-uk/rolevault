@@ -15,7 +15,7 @@ final class RoleVaultAPI {
     private let encoder: JSONEncoder
 
     private init() {
-        self.baseURL = UserDefaults.standard.string(forKey: "rolevault_api_url") ?? "http://localhost:8001"
+        self.baseURL = UserDefaults.standard.string(forKey: "rolevault_api_url") ?? "https://backend.asherlewis.online"
         self.session = URLSession.shared
         self.decoder = JSONDecoder()
         self.decoder.keyDecodingStrategy = .convertFromSnakeCase
