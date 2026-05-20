@@ -53,7 +53,7 @@ struct ProfileView: View {
                         )
                     }
                     .padding(.horizontal)
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 16)
                 }
                 .padding(.top)
             }
@@ -67,13 +67,13 @@ struct ProfileView: View {
             ZStack {
                 Circle()
                     .fill(.thinMaterial)
-                    .frame(width: 90, height: 90)
+                    .frame(width: 72, height: 72)
                 Text("RV")
-                    .font(.largeTitle.weight(.bold))
+                    .font(.title.weight(.bold))
                     .foregroundStyle(.primary)
                 Circle()
                     .stroke(.white.opacity(0.2), lineWidth: 2)
-                    .frame(width: 90, height: 90)
+                    .frame(width: 72, height: 72)
             }
 
             Text("RoleVault")
@@ -83,7 +83,7 @@ struct ProfileView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
-        .padding(.top, 20)
+        .padding(.top, 16)
     }
 
     private func row(icon: String, title: String, color: Color) -> some View {

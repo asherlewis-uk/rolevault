@@ -42,7 +42,7 @@ struct HomeView: View {
                     }
                 }
                 .padding(.horizontal)
-                .padding(.bottom, 32)
+                .padding(.bottom, 16)
             }
             .scrollIndicators(.hidden)
             .refreshable {

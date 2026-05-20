@@ -92,6 +92,12 @@ final class CreateCharacterViewModel {
         let character = buildCharacter()
         let userId = AuthService.shared.currentUser?.id
 
+        // Prevent silent data loss: journal entries require user scoping
+        if !journalEntries.isEmpty && userId == nil {
+            errorMessage = "You must be signed in to save journal entries."
+            return
+        }
+
         do {
             try await CharacterStore.shared.insert(character)
 

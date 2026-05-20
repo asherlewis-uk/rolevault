@@ -181,7 +181,13 @@ final class CharacterStore {
     /// with any `CharacterCustomization` overrides via `MergedCharacterTraits`.
     @MainActor
     func effectiveSystemPrompt(character: Character, userId: UUID) -> String {
-        let customization = try? fetchCustomization(characterId: character.id, userId: userId)
+        let customization: CharacterCustomization?
+        do {
+            customization = try fetchCustomization(characterId: character.id, userId: userId)
+        } catch {
+            print("Warning: failed to fetch character customization for prompt building: \(error)")
+            customization = nil
+        }
         let merged = MergedCharacterTraits(base: character, customization: customization)
         return merged.formattedSystemPrompt
     }

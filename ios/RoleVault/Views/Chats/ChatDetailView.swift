@@ -10,6 +10,7 @@ struct ChatDetailView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var appearedMessageIDs = Set<String>()
     @State private var personas: [Persona] = []
+    @State private var errorBanner: String? = nil
 
     var activePersona: Persona? {
         personas.first { $0.isActive }
@@ -50,6 +51,13 @@ struct ChatDetailView: View {
             }
 
             VStack(spacing: 0) {
+                if let error = errorBanner {
+                    errorBannerView(message: error)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
                 CharacterHeader(
                     character: character,
                     isTyping: viewModel.isTyping,
@@ -91,6 +99,17 @@ struct ChatDetailView: View {
         .onChange(of: viewModel.messages) { old, new in
             animateNewMessages(old: old, new: new)
         }
+        .onChange(of: viewModel.errorBanner) { _, new in
+            errorBanner = new
+            if new != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                    withAnimation { errorBanner = nil }
+                    viewModel.errorBanner = nil
+                }
+            }
+        }
+        .toolbar(.hidden, for: .tabBar)
+        .interactiveDismissDisabled()
     }
 
     private var personaToolbarItem: some ToolbarContent {
@@ -141,9 +160,37 @@ struct ChatDetailView: View {
         HapticEngine.impact(.light)
         let text = messageText
         messageText = ""
+        withAnimation { errorBanner = nil }
         Task {
             await viewModel.sendMessage(text, character: character, persona: activePersona)
         }
+    }
+
+    private func errorBannerView(message: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.red)
+            Text(message)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.red)
+            Spacer()
+            Button {
+                withAnimation { errorBanner = nil }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.red.opacity(0.7))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.red.opacity(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(.red.opacity(0.25), lineWidth: 1)
+                )
+        )
     }
 
     private func setActivePersona(_ persona: Persona) {

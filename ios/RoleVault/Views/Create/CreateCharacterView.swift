@@ -48,7 +48,7 @@ struct CreateCharacterView: View {
                         .shadow(color: .purple.opacity(0.4), radius: 16, x: 0, y: 8)
                     }
                     .padding(.horizontal)
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 16)
                 }
                 .padding(.top)
             }
@@ -98,13 +98,13 @@ struct CreateCharacterView: View {
                     ZStack {
                         Circle()
                             .fill(.thinMaterial)
-                            .frame(width: 100, height: 100)
+                            .frame(width: 80, height: 80)
 
                         if let data = viewModel.avatarData, let uiImage = UIImage(data: data) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .scaledToFill()
-                                .frame(width: 100, height: 100)
+                                .frame(width: 80, height: 80)
                                 .clipShape(Circle())
                         } else {
                             Image(systemName: "camera.fill")
@@ -114,7 +114,7 @@ struct CreateCharacterView: View {
 
                         Circle()
                             .stroke(.white.opacity(0.2), lineWidth: 2)
-                            .frame(width: 100, height: 100)
+                            .frame(width: 80, height: 80)
                     }
                 }
                 .buttonStyle(.plain)
@@ -360,7 +360,7 @@ struct CreateCharacterView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 20)
+                        .padding(.vertical, 16)
                 }
             }
         }

@@ -92,3 +92,5 @@ docs/user_bring_back-web.md
 # Python
 __pycache__/
 *.pyc
+
+docs/user_skill_implementation.md

@@ -170,7 +170,7 @@ struct GalleryThumbnail: View {
                                 .scaledToFill()
                         } else {
                             Image(systemName: "photo")
-                                .font(.largeTitle)
+                                .font(.title2)
                                 .foregroundStyle(.secondary)
                         }
                     }

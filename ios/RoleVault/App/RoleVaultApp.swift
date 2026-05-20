@@ -117,7 +117,7 @@ struct LoginView: View {
                     Spacer()
 
                     Text("RoleVault")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
 
                     Text("Connect to RoleVault")
@@ -238,7 +238,7 @@ struct LoginView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, 16)
 
                     Spacer()
                 }

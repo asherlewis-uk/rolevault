@@ -16,10 +16,16 @@ struct CharacterHeader: View {
                     .font(.headline)
 
                 HStack(spacing: 6) {
-                    statusDot
-                    Text(statusText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if isTyping {
+                        statusDot
+                        Text(statusText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(character.category.rawValue)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
@@ -91,12 +97,11 @@ struct CharacterHeader: View {
 
     private var statusColor: Color {
         if isTyping { return .orange }
-        if character.awayMessage?.isEmpty == false { return .gray }
-        return .green
+        return .clear
     }
 
     private var statusText: String {
         if isTyping { return "typing..." }
-        return character.awayMessage?.isEmpty == false ? character.awayMessage! : "online"
+        return ""
     }
 }

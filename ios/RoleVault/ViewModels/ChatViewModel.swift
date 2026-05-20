@@ -6,6 +6,7 @@ final class ChatViewModel {
     var messages: [ChatMessage] = []
     var isTyping = false
     var errorMessage: String?
+    var errorBanner: String?
     var currentConversationId: String?
     var currentCharacterId: UUID?
     var currentPersonaId: UUID?
@@ -50,6 +51,7 @@ final class ChatViewModel {
                 }
             }
             errorMessage = error.localizedDescription
+            errorBanner = error.localizedDescription
         }
     }
 
@@ -139,14 +141,9 @@ final class ChatViewModel {
         } catch {
             await MainActor.run {
                 errorMessage = error.localizedDescription
+                errorBanner = error.localizedDescription
                 if let index = messages.firstIndex(where: { $0.id == assistantId }) {
-                    messages[index] = ChatMessage(
-                        id: assistantId,
-                        text: "[Error: \(error.localizedDescription)]",
-                        sender: characterName,
-                        isCreatedByUser: false,
-                        createdAt: messages[index].createdAt
-                    )
+                    messages.remove(at: index)
                 }
             }
         }
