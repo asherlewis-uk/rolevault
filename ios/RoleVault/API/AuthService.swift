@@ -11,11 +11,6 @@ final class AuthService {
 
     private init() {
         self.isAuthenticated = (try? KeychainManager.shared.retrieveJWT()) != nil
-        if isAuthenticated {
-            self.currentUser = MainActor.assumeIsolated {
-                try? fetchCurrentUser()
-            }
-        }
     }
 
     /// Sign in with Apple. Sends the identity token to the backend which verifies it and returns a RoleVault JWT.

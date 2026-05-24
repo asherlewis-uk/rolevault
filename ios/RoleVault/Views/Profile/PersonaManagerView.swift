@@ -9,22 +9,30 @@ struct PersonaManagerView: View {
         ZStack {
             AuroraBackground()
 
-            List {
-                ForEach(personas) { persona in
-                    PersonaRow(persona: persona)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                }
-                .onDelete { indexSet in
-                    for index in indexSet {
-                        SwiftDataContainer.shared.context.delete(personas[index])
+            if personas.isEmpty {
+                ContentUnavailableView(
+                    "No Personas Yet",
+                    systemImage: "person.2.slash",
+                    description: Text("Create a persona to chat as a specific identity.")
+                )
+            } else {
+                List {
+                    ForEach(personas) { persona in
+                        PersonaRow(persona: persona)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                     }
-                    try? SwiftDataContainer.shared.context.save()
-                    loadPersonas()
+                    .onDelete { indexSet in
+                        for index in indexSet {
+                            SwiftDataContainer.shared.context.delete(personas[index])
+                        }
+                        try? SwiftDataContainer.shared.context.save()
+                        loadPersonas()
+                    }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
         }
         .navigationTitle("Personas")
         .toolbar {

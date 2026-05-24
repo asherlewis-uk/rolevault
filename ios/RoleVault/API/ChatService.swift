@@ -102,26 +102,23 @@ final class ChatService {
                                   let jsonData = payload.data(using: .utf8) else { continue }
 
                             if let chunk = try? self.decoder.decode(OpenAIStreamChunk.self, from: jsonData),
-                               let choice = chunk.choices?.first,
-                               let delta = choice.delta,
-                               let content = delta.content {
-                                accumulatedText += content
-                                continuation.yield(.delta(accumulatedText))
-                            }
-
-                            if let chunk = try? self.decoder.decode(OpenAIStreamChunk.self, from: jsonData),
-                               let choice = chunk.choices?.first,
-                               choice.finishReason != nil {
-                                let finalMessage = ChatMessage(
-                                    id: messageId,
-                                    text: accumulatedText,
-                                    sender: "Assistant",
-                                    isCreatedByUser: false,
-                                    createdAt: ISO8601DateFormatter().string(from: Date())
-                                )
-                                continuation.yield(.done(message: finalMessage))
-                                continuation.finish()
-                                return
+                               let choice = chunk.choices?.first {
+                                if let content = choice.delta?.content {
+                                    accumulatedText += content
+                                    continuation.yield(.delta(accumulatedText))
+                                }
+                                if choice.finishReason != nil {
+                                    let finalMessage = ChatMessage(
+                                        id: messageId,
+                                        text: accumulatedText,
+                                        sender: "Assistant",
+                                        isCreatedByUser: false,
+                                        createdAt: ISO8601DateFormatter().string(from: Date())
+                                    )
+                                    continuation.yield(.done(message: finalMessage))
+                                    continuation.finish()
+                                    return
+                                }
                             }
                         }
                     }

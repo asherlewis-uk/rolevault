@@ -29,17 +29,22 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 struct ContentView: View {
     @State private var appState = AppState()
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     var body: some View {
         Group {
-            if appState.isAuthenticated {
-                MainTabView()
-            } else {
+            if !appState.isAuthenticated {
                 LoginView()
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))
+            } else if !hasSeenOnboarding {
+                OnboardingView()
+                    .transition(.opacity)
+            } else {
+                MainTabView()
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: appState.isAuthenticated)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: hasSeenOnboarding)
     }
 }
 
@@ -107,6 +112,9 @@ struct LoginView: View {
     @State private var magicLinkSent = false
     @State private var magicLinkToken: String?
     @State private var magicLinkLoading = false
+    @State private var email: String = ""
+    @State private var password: String = ""
+    @State private var loginLoading = false
 
     var body: some View {
         NavigationStack {
@@ -139,6 +147,50 @@ struct LoginView: View {
                             .signInWithAppleButtonStyle(.black)
                             .frame(height: 50)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                            // Email / Password Login
+                            VStack(spacing: 12) {
+                                TextField("Email", text: $email)
+                                    .textContentType(.emailAddress)
+                                    .keyboardType(.emailAddress)
+                                    .autocorrectionDisabled()
+                                    .textInputAutocapitalization(.never)
+                                    .padding()
+                                    .background(.thinMaterial)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                                SecureField("Password", text: $password)
+                                    .textContentType(.password)
+                                    .padding()
+                                    .background(.thinMaterial)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                                Button {
+                                    Task { await handleEmailLogin() }
+                                } label: {
+                                    HStack {
+                                        if loginLoading {
+                                            ProgressView().tint(.white)
+                                        } else {
+                                            Text("Sign In")
+                                                .font(.headline)
+                                        }
+                                    }
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .fill(.tint)
+                                    )
+                                    .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1.0)
+                                }
+                                .disabled(email.isEmpty || password.isEmpty || loginLoading)
+                            }
+                            .padding(.horizontal, 4)
+
+                            Divider()
+                                .padding(.vertical, 4)
 
                             // Magic Link Email Sign-In
                             if !showMagicLink {
@@ -262,6 +314,24 @@ struct LoginView: View {
             } message: {
                 Text(errorMessage ?? "Unknown error")
             }
+        }
+    }
+
+    private func handleEmailLogin() async {
+        guard !email.isEmpty, !password.isEmpty else { return }
+        loginLoading = true
+        defer { loginLoading = false }
+        do {
+            _ = try await AuthService.shared.login(email: email, password: password)
+            HapticEngine.notification(.success)
+        } catch let apiError as APIError {
+            errorMessage = apiError.localizedDescription
+            showError = true
+            HapticEngine.notification(.error)
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+            HapticEngine.notification(.error)
         }
     }
 

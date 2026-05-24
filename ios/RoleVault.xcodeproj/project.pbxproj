@@ -36,6 +36,8 @@
 		6CA76A2923F179398FE04D1B /* ChatsGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C22994EFD3865738993E89E /* ChatsGalleryView.swift */; };
 		6D4AD3F193AF54EAD64597E5 /* MessageInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24869795103D0A7213AC4AED /* MessageInputBar.swift */; };
 		7F46C39235C8AA271F941404 /* GalleryGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6AF93FAC804C2E37F4C5687 /* GalleryGrid.swift */; };
+		EB90820BF6F04235BA5EDD9C /* GalleryThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F71658B2FC4B67833135FE /* GalleryThumbnail.swift */; };
+		D612E51131724BB4A62C7123 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBA4B09E1B9491ABF26B419 /* OnboardingView.swift */; };
 		80029121504E8EC1F12DF655 /* CascadeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D667EEDC3C14AFA459878B4C /* CascadeStore.swift */; };
 		85F4A44196F94CD3B62F112F /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06C04F204E3068AFA85C39AA /* AuthModels.swift */; };
 		8AED97C8DD78334637688BA3 /* ParticleEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6FBA93C12CF85FE1206419C /* ParticleEffects.swift */; };
@@ -132,6 +134,8 @@
 		BCCE975431F3A21A652A7368 /* RoleVault.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoleVault.entitlements; sourceTree = "<group>"; };
 		BDA2EE936DC580A7941A47E2 /* RoleVaultWidgetAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultWidgetAttributes.swift; sourceTree = "<group>"; };
 		C6AF93FAC804C2E37F4C5687 /* GalleryGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryGrid.swift; sourceTree = "<group>"; };
+		F2F71658B2FC4B67833135FE /* GalleryThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryThumbnail.swift; sourceTree = "<group>"; };
+		6EBA4B09E1B9491ABF26B419 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		C7C4D5218758E720480FA500 /* LiquidGlassPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassPanel.swift; sourceTree = "<group>"; };
 		CEEE5BAC90BDB7EF8BF62D2D /* RoleVaultUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultUITests.swift; sourceTree = "<group>"; };
 		CFC96609715CA90B3B9F1B77 /* PersonaManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonaManagerView.swift; sourceTree = "<group>"; };
@@ -263,6 +267,7 @@
 		B56A3C638B520E24DA9AEEA7 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
+				6EBA4B09E1B9491ABF26B419 /* OnboardingView.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -341,6 +346,7 @@
 				2C22994EFD3865738993E89E /* ChatsGalleryView.swift */,
 				3A6B028D2A0A65FB7B5612F7 /* EditCharacterSheet.swift */,
 				C6AF93FAC804C2E37F4C5687 /* GalleryGrid.swift */,
+				F2F71658B2FC4B67833135FE /* GalleryThumbnail.swift */,
 				5F040207C03AB626BFA7D976 /* MessageBubble.swift */,
 				24869795103D0A7213AC4AED /* MessageInputBar.swift */,
 				2D8246FB10C37EE3B09D9423 /* TypingIndicator.swift */,
@@ -524,6 +530,8 @@
 				06BC7117758CE38A50F31030 /* DynamicIslandActivity.swift in Sources */,
 				392D2E6ADCA97361655FCCE2 /* EditCharacterSheet.swift in Sources */,
 				7F46C39235C8AA271F941404 /* GalleryGrid.swift in Sources */,
+				EB90820BF6F04235BA5EDD9C /* GalleryThumbnail.swift in Sources */,
+				D612E51131724BB4A62C7123 /* OnboardingView.swift in Sources */,
 				120C7CED29BFCD46F57212FC /* GalleryMoment.swift in Sources */,
 				C6D5ED4EDF46EB2F689CAC0B /* HapticEngine.swift in Sources */,
 				A2B9235CD3C95BC0BAA3B471 /* HomeView.swift in Sources */,

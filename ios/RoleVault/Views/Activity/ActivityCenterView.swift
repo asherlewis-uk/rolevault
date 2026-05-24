@@ -50,6 +50,14 @@ struct ActivityCenterView: View {
                 AuroraBackground()
 
                 List {
+                    if events.isEmpty {
+                        ContentUnavailableView(
+                            "No Recent Activity",
+                            systemImage: "clock.badge.questionmark",
+                            description: Text("Your activity will appear here as you use RoleVault.")
+                        )
+                        .listRowBackground(Color.clear)
+                    }
                     ForEach(events) { event in
                         ActivityRow(event: event)
                             .listRowBackground(Color.clear)

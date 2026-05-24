@@ -67,7 +67,7 @@ struct AuroraBackground: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { _ in
+        TimelineView(.animation(minimumInterval: 1 / 10, paused: false)) { _ in
             MeshGradient(
                 width: 3,
                 height: 3,

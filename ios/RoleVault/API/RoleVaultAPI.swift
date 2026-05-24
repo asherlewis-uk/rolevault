@@ -48,6 +48,9 @@ final class RoleVaultAPI {
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw APIError.unknown
             }
+            if httpResponse.statusCode == 401 {
+                throw APIError.unauthorized
+            }
             if httpResponse.statusCode == 404 {
                 throw APIError.notFound
             }
@@ -72,6 +75,9 @@ final class RoleVaultAPI {
             let (bytes, response) = try await session.bytes(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw APIError.unknown
+            }
+            if httpResponse.statusCode == 401 {
+                throw APIError.unauthorized
             }
             if httpResponse.statusCode == 404 {
                 throw APIError.notFound

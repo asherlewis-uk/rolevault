@@ -8,7 +8,7 @@ struct ChatsGalleryView: View {
 
     enum Segment: String, CaseIterable {
         case chats = "Chats"
-        case gallery = "Gallery"
+        case gallery = "Moments"
     }
 
     var body: some View {
@@ -41,41 +41,64 @@ struct ChatsGalleryView: View {
     }
 
     private var chatsList: some View {
-        List {
-            ForEach(conversations) { convo in
-                NavigationLink(value: convo) {
-                    ConversationRow(convo: convo)
-                }
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        deleteConversation(convo)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
+        Group {
+            if conversations.isEmpty {
+                ContentUnavailableView(
+                    "No Conversations",
+                    systemImage: "message",
+                    description: Text("Start chatting with a character from Home.")
+                )
+                .padding(.top, 60)
+            } else {
+                List {
+                    ForEach(conversations) { convo in
+                        NavigationLink(value: convo) {
+                            ConversationRow(convo: convo)
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                deleteConversation(convo)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 }
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .navigationDestination(for: Conversation.self) { convo in
-            if let character = characterFor(convo: convo) {
-                ChatDetailView(character: character)
-            } else {
-                Text("Character not found")
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .navigationDestination(for: Conversation.self) { convo in
+                    if let character = characterFor(convo: convo) {
+                        ChatDetailView(character: character)
+                    } else {
+                        Text("Character not found")
+                    }
+                }
             }
         }
     }
 
     private var galleryGrid: some View {
-        ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 12) {
-                ForEach(moments) { moment in
-                    GalleryThumbnail(moment: moment)
+        Group {
+            if moments.isEmpty {
+                ContentUnavailableView(
+                    "No Saved Moments",
+                    systemImage: "text.bubble",
+                    description: Text("Save meaningful messages from any conversation to keep them here.")
+                )
+                .padding(.top, 60)
+            } else {
+                List {
+                    ForEach(moments) { moment in
+                        MomentRow(moment: moment)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
-            .padding()
         }
     }
 
@@ -154,34 +177,39 @@ struct ConversationRow: View {
     }
 }
 
-struct GalleryThumbnail: View {
+struct MomentRow: View {
     let moment: GalleryMoment
 
     var body: some View {
-        VStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.thinMaterial)
-                .frame(height: 120)
-                .overlay(
-                    Group {
-                        if let data = moment.imageData, let uiImage = UIImage(data: data) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                        } else {
-                            Image(systemName: "photo")
-                                .font(.title2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                )
-                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(.indigo.opacity(0.15))
+                    .frame(width: 44, height: 44)
+                Image(systemName: "text.bubble.fill")
+                    .font(.callout)
+                    .foregroundStyle(.indigo)
+            }
 
-            Text(moment.caption)
-                .font(.caption)
-                .lineLimit(1)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(moment.caption)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Text(moment.textExcerpt)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+
+            Text(moment.createdAt.timeAgo())
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
+        .padding()
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
     }
 }

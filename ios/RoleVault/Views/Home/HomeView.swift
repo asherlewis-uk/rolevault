@@ -27,6 +27,21 @@ struct HomeView: View {
                     categoryBar
                         .padding(.vertical, 12)
 
+                    if filteredCharacters.isEmpty {
+                        ContentUnavailableView {
+                            Label(
+                                searchText.isEmpty ? "No Characters Yet" : "No Results",
+                                systemImage: searchText.isEmpty ? "person.2.slash" : "magnifyingglass"
+                            )
+                        } description: {
+                            Text(searchText.isEmpty
+                                ? "Tap Create to build your first character, or pull to refresh."
+                                : "Try a different search term or category."
+                            )
+                        }
+                        .padding(.top, 60)
+                    }
+
                     ForEach(filteredCharacters) { character in
                         CharacterCard(character: character) {
                             viewModel.selectedCharacter = character

@@ -24,8 +24,9 @@ final class ChatViewModel {
         currentCharacterId = character.id
         currentPersonaId = persona?.id
 
-        // Ensure a local Conversation record exists
         let localConvo = await ensureLocalConversation(character: character, persona: persona, userId: userId)
+
+        await MainActor.run { messages = [] }
 
         do {
             let convos = try await ChatService.shared.fetchConversations()
@@ -43,15 +44,27 @@ final class ChatViewModel {
                 }
             }
         } catch {
-            // Fallback to cached messages if remote fails
             if let local = localConvo {
                 let cached = await loadCachedMessages(conversationId: local.remoteId, userId: userId)
-                await MainActor.run {
-                    self.messages = cached
-                }
+                await MainActor.run { self.messages = cached }
             }
             errorMessage = error.localizedDescription
             errorBanner = error.localizedDescription
+        }
+
+        // Auto-inject greeting if conversation is empty and character has one
+        if messages.isEmpty, !character.greetingMessage.isEmpty {
+            let greetingMessage = ChatMessage(
+                id: UUID().uuidString,
+                text: character.greetingMessage,
+                sender: character.name,
+                isCreatedByUser: false,
+                createdAt: ISO8601DateFormatter().string(from: Date())
+            )
+            await MainActor.run { messages.append(greetingMessage) }
+            if let convoId = currentConversationId {
+                await cacheMessage(greetingMessage, conversationId: convoId, userId: userId)
+            }
         }
     }
 
@@ -180,6 +193,18 @@ final class ChatViewModel {
         Task {
             await loadConversation(character: character, persona: persona)
         }
+    }
+
+    @MainActor
+    func setActivePersona(_ persona: Persona, userId: UUID) {
+        let descriptor = FetchDescriptor<Persona>(
+            predicate: #Predicate { $0.userId == userId }
+        )
+        guard let all = try? SwiftDataContainer.shared.context.fetch(descriptor) else { return }
+        for p in all {
+            p.isActive = (p.id == persona.id)
+        }
+        try? SwiftDataContainer.shared.context.save()
     }
 
     // MARK: - Gallery Moments

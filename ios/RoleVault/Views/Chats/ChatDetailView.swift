@@ -197,11 +197,10 @@ struct ChatDetailView: View {
         for p in personas {
             p.isActive = (p.id == persona.id)
         }
-        do {
-            try SwiftDataContainer.shared.context.save()
-        } catch {
-            // Best-effort save
+        if let userId = AuthService.shared.currentUser?.id {
+            viewModel.setActivePersona(persona, userId: userId)
         }
+        viewModel.switchPersona(to: persona, character: character)
     }
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
@@ -216,8 +215,19 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private var messageList: some View {
-        LazyVStack(spacing: 12) {
-            ForEach(viewModel.messages) { message in
+        if viewModel.messages.isEmpty && !viewModel.isTyping {
+            ContentUnavailableView(
+                "Start the Conversation",
+                systemImage: "bubble.left.and.bubble.right",
+                description: Text(character.greetingMessage.isEmpty
+                    ? "Say hello to \(character.name)."
+                    : "\(character.name) has a greeting for you."
+                )
+            )
+            .padding(.top, 40)
+        } else {
+            LazyVStack(spacing: 12) {
+                ForEach(viewModel.messages) { message in
                 MessageBubble(
                     message: message,
                     isUser: message.isCreatedByUser,
@@ -232,6 +242,7 @@ struct ChatDetailView: View {
                 TypingIndicator()
                     .id("typing")
                     .transition(.scale.combined(with: .opacity))
+            }
             }
         }
     }
