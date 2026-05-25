@@ -1,6 +1,6 @@
 # RoleVault — Agent Guide
 
-RoleVault is a native iOS client for [LibreChat](https://librechat.ai). It brings role-play character management, persona switching, and live conversation sync to iPhone. There is no bundled backend — the app connects to a user-provided LibreChat instance.
+RoleVault is a native iOS app for role-play character management, persona switching, and live conversation sync to iPhone. It connects to the RoleVault API backend.
 
 ## Technology Stack
 
@@ -41,7 +41,7 @@ rolevault/
 │   ├── ARCHITECTURE.md             # Original architecture notes
 │   └── README.md                   # iOS-specific quick start
 ├── setup-swiftly.sh                # Bootstrap Swift 6.0 toolchain
-├── librechat-integration.md        # Full backend API mapping and sync strategy
+├── backend-integration.md        # Full backend API mapping and sync strategy
 ├── README.md                       # Project-level documentation
 └── .github/workflows/beta.yml      # CI: build + TestFlight on push to main
 ```
@@ -51,7 +51,7 @@ rolevault/
 ### Prerequisites
 - macOS Sonoma 14.5+ with **Xcode 16+** (the project sets `xcodeVersion: '26.0'` and CI selects `Xcode_26.3.app`)
 - Apple Developer account (paid) for device testing and TestFlight
-- A running LibreChat backend (default URL: `http://localhost:3080`)
+- A running RoleVault API backend (default URL: `https://backend.asherlewis.online`)
 
 ### Local Development
 
@@ -116,14 +116,14 @@ ViewModel (@Observable)
     ↓
 Service (AuthService, ChatService, AgentService, ConfigService)
     ↓
-LibreChatAPI (URLRequest builder + URLSession executor)
+RoleVaultAPI (URLRequest builder + URLSession executor)
     ↓
 TokenInterceptor (401 refresh) / KeychainManager (JWT storage)
 ```
 
 ### Dependency Injection
 The app uses lightweight static singletons, not a protocol-based DI container:
-- `LibreChatAPI.shared`
+- `RoleVaultAPI.shared`
 - `AuthService.shared`
 - `ChatService.shared`
 - `AgentService.shared`
@@ -139,9 +139,9 @@ The app uses lightweight static singletons, not a protocol-based DI container:
 Eight `@Model` classes are registered in `SwiftDataContainer`:
 - `Character` — shared canonical role-play characters with base personality fields and categories
 - `CharacterCustomization` — per-user overlay on a `Character` (overrides, favorites, local tweaks)
-- `UserAccount` — local representation of the authenticated LibreChat user (`isCurrent` flag)
+- `UserAccount` — local representation of the authenticated RoleVault user (`isCurrent` flag)
 - `Persona` — user identity profiles; one can be `isActive` at a time
-- `Conversation` — local cache of remote LibreChat conversations (`remoteId` maps to server ID)
+- `Conversation` — local cache of remote RoleVault API conversations (`remoteId` maps to server ID)
 - `MessageWrapper` — local cache of chat messages
 - `JournalEntry` — trigger-keyphrase based memory entries scoped to a user + character
 - `GalleryMoment` — saved chat excerpts / screenshots scoped to a user
@@ -169,9 +169,9 @@ The architecture enforces strict separation between shared and user-scoped data:
 - **Ownership vs usage**. `Character.ownerUserId` determines edit permissions on the base. Non-owners who edit a character receive a `CharacterCustomization` instead, leaving the shared base untouched.
 
 ### Networking Patterns
-- `LibreChatAPI` builds `URLRequest` objects and executes via `URLSession`.
+- `RoleVaultAPI` builds `URLRequest` objects and executes via `URLSession`.
 - JSON encode/decode uses `.convertToSnakeCase` / `.convertFromSnakeCase` strategies.
-- Authenticated requests auto-inject `Authorization: Bearer <jwt>` from Keychain.
+- Authenticated requests auto-inject `Authorization: Bearer ***` from Keychain.
 - On `401 Unauthorized`, `TokenInterceptor.attemptRefresh()` is called automatically once per request.
 - Streaming chat uses `URLSession.AsyncBytes.lines` to parse SSE (`text/event-stream`).
 - `APIError` is a strongly typed enum covering offline, unauthorized, decoding, and server errors.
@@ -179,9 +179,9 @@ The architecture enforces strict separation between shared and user-scoped data:
 ### Auth Flow
 1. `AuthService.login(email:password)` → `POST /api/auth/login`
 2. Save JWT + refresh token to Keychain (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`)
-3. Persist or update a `UserAccount` from the `LibreChatUser` in the response; set `isCurrent = true`
+3. Persist or update a `UserAccount` from the `RoleVaultUser` in the response; set `isCurrent = true`
 4. Migrate any legacy unscoped data (records with `userId == nil` or `ownerUserId == nil`) to the newly-authenticated user
-5. All requests read JWT from Keychain via `LibreChatAPI.buildRequest`
+5. All requests read JWT from Keychain via `RoleVaultAPI.buildRequest`
 6. On 401 → `TokenInterceptor` calls `GET /api/auth/refresh?retry=true` with refresh token
 7. On refresh failure → clears Keychain, sets `AuthService.isAuthenticated = false`, clears `AuthService.currentUser`
 8. Logout calls `POST /api/auth/logout` (best-effort), then deletes Keychain tokens and clears current user
@@ -207,11 +207,11 @@ The architecture enforces strict separation between shared and user-scoped data:
 
 ### Character / Prompt Building
 - `Character.formattedSystemPrompt` assembles the **base** personality fields into a single block of text
-- `CharacterStore.effectiveSystemPrompt(character:userId:)` merges the base character with the current user's `CharacterCustomization` overrides to produce the prompt actually sent to LibreChat
+- `CharacterStore.effectiveSystemPrompt(character:userId:)` merges the base character with the current user's `CharacterCustomization` overrides to produce the prompt actually sent to the RoleVault API
 - `Persona.formattedUserContext` injects user identity into the same prompt stack
 - `JournalEntry.isTriggered(by:)` checks if a user message contains the trigger keyphrase (case-insensitive) and injects the memory content into the prompt
 - `CharacterStore.fetchJournalEntries(characterId:userId:)` returns only the current user's journal entries for a character
-- `AgentService` can create/update/delete LibreChat agents from a `Character` (agents represent the shared base, not a customization)
+- `AgentService` can create/update/delete RoleVault API agents from a `Character` (agents represent the shared base, not a customization)
 
 ### Data Import / Export
 - `CharacterStore` supports **Tavern V2** character import/export via PNG metadata (`chara` key in `kCGImagePropertyPNGDictionary`)
@@ -222,7 +222,7 @@ The architecture enforces strict separation between shared and user-scoped data:
 - **No hardcoded secrets** — API keys and tokens live in Keychain only.
 - **Keychain accessibility**: `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` (not iCloud-synced).
 - **No certificate pinning** — standard TLS via URLSession.
-- **Backend URL** is user-configurable at runtime and persisted in `UserDefaults` (key: `librechat_base_url`). Default is `http://localhost:3080`.
+- **Backend URL** is user-configurable at runtime and persisted in `UserDefaults` (key: `rolevault_base_url`). Default is `https://backend.asherlewis.online`.
 - **Camera / Photos**: `Info.plist` declares usage descriptions for avatar selection only.
 - **Push notifications**: `aps-environment` entitlement is set to `development`.
 - **ATS**: No arbitrary-load exceptions; physical devices require HTTPS for non-localhost backends.

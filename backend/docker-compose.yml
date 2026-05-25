@@ -27,9 +27,6 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault?options=-c%20search_path%3Drolevault
-      # Assumes LibreChat and RoleVault share the same PostgreSQL instance.
-      # LibreChat users table is accessed directly for password verification and registration.
-      LIBRECHAT_DB_URL: postgresql+asyncpg://rolevault:rolevault@postgres:5432/rolevault
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       INFERENCE_URL: ${INFERENCE_URL:-http://host.docker.internal:1234}
     depends_on:

@@ -15,6 +15,7 @@ import CreateCharacter from "./pages/CreateCharacter";
 import Profile         from "./pages/Profile";
 import Favourites      from "./pages/Favourites";
 import NotFound        from "./pages/NotFound";
+import MagicLinkVerify from "./pages/MagicLinkVerify";
 import Notifications   from "./pages/settings/Notifications";
 import Privacy         from "./pages/settings/Privacy";
 import Billing         from "./pages/settings/Billing";
@@ -31,8 +32,9 @@ const App = () => (
         <AuthProvider>
           <Routes>
             {/* Public routes */}
-            <Route path="/signin"  element={<SignIn />} />
-            <Route path="/signup"  element={<SignUp />} />
+            <Route path="/signin"       element={<SignIn />} />
+            <Route path="/signup"       element={<SignUp />} />
+            <Route path="/magic-link"   element={<MagicLinkVerify />} />
 
             {/* Protected routes */}
             <Route path="/"        element={<ProtectedRoute><Index /></ProtectedRoute>} />

@@ -237,9 +237,10 @@ export default function Profile() {
               </div>
               <button
                 onClick={() => setEditing(true)}
-                className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full btn-gradient flex items-center justify-center"
+                className="absolute -bottom-1.5 -right-1.5 w-11 h-11 rounded-full btn-gradient flex items-center justify-center"
+                aria-label="Edit profile photo"
               >
-                <Edit2 className="w-2.5 h-2.5 text-primary-foreground" />
+                <Edit2 className="w-4 h-4 text-primary-foreground" />
               </button>
             </div>
 

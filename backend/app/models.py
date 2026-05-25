@@ -17,6 +17,7 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
+    password = Column(String(255), nullable=False)
     display_name = Column(String(255), nullable=True)
     avatar_url = Column(Text, nullable=True)
     apple_user_id = Column(String(255), unique=True, nullable=True)
@@ -150,25 +151,6 @@ class JournalEntry(Base):
 
     user = relationship("User", back_populates="journal_entries")
     character = relationship("Character", back_populates="journal_entries")
-
-
-class LibreChatUser(Base):
-    """
-    Maps to the LibreChat users table (assumed to be in the 'public' schema).
-    This is a read-only / write-through model for auth compatibility.
-    Adjust columns if your LibreChat schema differs.
-    """
-    __tablename__ = "users"
-    __table_args__ = {"schema": "public"}
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    password = Column(String(255), nullable=False)
-    name = Column(String(255), nullable=True)
-    username = Column(String(255), nullable=True, unique=True)
-    avatar = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
 
 
 class GalleryMoment(Base):

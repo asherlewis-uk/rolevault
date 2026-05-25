@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.execute("CREATE SCHEMA IF NOT EXISTS rolevault")
     op.execute("CREATE SCHEMA IF NOT EXISTS public")
 
-    # Create public.users (LibreChat compatibility)
+    # Create public.users (shared auth users table)
     op.create_table(
         'users',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),

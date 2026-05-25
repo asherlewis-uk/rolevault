@@ -119,11 +119,12 @@ export function CharacterCard({
               </span>
             </div>
 
-            {/* Favourite heart button overlay */}
+            {/* Favourite heart button overlay — minimum 44pt touch target */}
             {showFavouriteButton && (
               <button
                 onClick={onToggleFavourite}
-                className="absolute bottom-2.5 right-2.5 w-7 h-7 rounded-full flex items-center justify-center z-20 transition-all duration-200"
+                className="absolute bottom-2.5 right-2.5 w-11 h-11 rounded-full flex items-center justify-center z-20 transition-all duration-200"
+                aria-label={isFavourited ? "Remove from favourites" : "Add to favourites"}
                 style={{
                   background: isFavourited
                     ? "hsl(var(--spectral-rose) / 0.85)"
@@ -138,7 +139,7 @@ export function CharacterCard({
                 }}
               >
                 <Heart
-                  className="w-3.5 h-3.5 transition-all duration-200"
+                  className="w-5 h-5 transition-all duration-200"
                   style={{
                     color: isFavourited ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
                     fill: isFavourited ? "hsl(var(--primary-foreground))" : "none",

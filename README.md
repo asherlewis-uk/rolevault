@@ -1,14 +1,14 @@
 # RoleVault
 
-RoleVault is a native iOS app for [LibreChat](https://librechat.ai) that brings role-play character management, persona switching, and conversation sync to your pocket. Built with SwiftUI, SwiftData, and zero third-party UI dependencies.
+RoleVault is a native iOS app for role-play character management, persona switching, and conversation sync. Built with SwiftUI, SwiftData, and zero third-party UI dependencies.
 
 ## Overview
 
 - **Native iOS 18+** — SwiftUI with MeshGradient aurora backgrounds, liquid-glass panels, and spring-driven transitions
 - **Character Management** — Create, edit, and organize role-play characters with backstories, directives, and avatars
 - **Persona System** — Switch user identities per conversation so the AI knows who is speaking
-- **Live Chat** — Streaming SSE conversations against your own LibreChat backend via `/api/ask`
-- **Conversation Sync** — Pull conversation history and messages from LibreChat; keep local SwiftData cache in sync
+- **Live Chat** — Streaming SSE conversations against the RoleVault API backend
+- **Conversation Sync** — Pull conversation history and messages from the RoleVault API; keep local SwiftData cache in sync
 - **TestFlight Distribution** — Push to `main` and GitHub Actions builds, signs, and uploads automatically
 
 ## Prerequisites
@@ -17,7 +17,7 @@ RoleVault is a native iOS app for [LibreChat](https://librechat.ai) that brings 
 - **Xcode 16+** (download from Mac App Store or Apple Developer Portal)
 - **Apple Developer Account** (paid) — required for TestFlight distribution and code signing
 - **Swiftly** — Swift toolchain manager; installed automatically by `./setup-swiftly.sh`
-- **Running LibreChat backend** — default target is `http://localhost:3080`; can be changed in-app
+- **Running RoleVault API backend** — default target is `https://backend.asherlewis.online`; can be changed in-app
 
 ## Local Development
 
@@ -59,23 +59,23 @@ cd ios
 ./build.sh
 ```
 
-## LibreChat Integration
+## Backend Integration
 
-RoleVault is a client for your own LibreChat instance. There is no bundled backend.
+RoleVault connects to the RoleVault API backend. There is no bundled backend.
 
 1. **Enter backend URL**
    - Open the app → **Profile** → **Backend**
-   - Enter your LibreChat URL (e.g., `https://chat.yourdomain.com` or `http://192.168.1.42:3080`)
+   - Enter your RoleVault API URL (default: `https://backend.asherlewis.online`)
 
 2. **Log in**
-   - Use existing LibreChat credentials (email + password)
+   - Use your RoleVault account credentials (email + password, Apple Sign In, or magic link)
    - JWT and refresh tokens are stored in the iOS Keychain
 
 3. **Start chatting**
    - Select a character → tap **Chat**
    - Messages stream in real time via SSE
 
-For endpoint mapping, auth flow details, and sync strategy, see [`librechat-integration.md`](librechat-integration.md).
+For endpoint mapping, auth flow details, and sync strategy, see [`backend-integration.md`](backend-integration.md).
 
 ## TestFlight Distribution
 
@@ -131,32 +131,32 @@ rolevault/
 │   ├── project.yml             # XcodeGen specification
 │   └── Gemfile                 # Ruby dependencies
 ├── setup-swiftly.sh            # Swift toolchain bootstrap
-├── librechat-integration.md    # Backend integration spec
+├── backend-integration.md      # Backend integration spec
 └── README.md                   # This file
 ```
 
 ## Troubleshooting
 
-### CORS errors when connecting to LibreChat
-LibreChat must be configured to allow your iOS origin. Set the `CORS_ORIGINS` environment variable on your LibreChat server:
+### CORS errors when connecting to the backend
+The RoleVault API must be configured to allow your iOS origin. Set the `CORS_ORIGINS` environment variable:
 ```bash
 CORS_ORIGINS="app://*,http://localhost*,capacitor://*"
 ```
 For production, add your domain or use `*` only for testing.
 
 ### HTTPS required for physical devices
-iOS requires HTTPS for non-localhost network requests. Options:
-- Run LibreChat behind an HTTPS reverse proxy (Nginx, Caddy, Traefik)
-- Use a tunnel like [ngrok](https://ngrok.com) for local testing: `ngrok http 3080`
+iOS requires HTTPS for non-localhost network requests. The production backend (`https://backend.asherlewis.online`) already uses HTTPS. For local development:
+- Run the RoleVault API behind an HTTPS reverse proxy (Nginx, Caddy, Traefik)
+- Use a tunnel like [ngrok](https://ngrok.com) for local testing
 - Add an ATS exception in `Info.plist` (not recommended for production)
 
 ### Local network permission
-When using an IP address on your local network (e.g., `http://192.168.1.42:3080`), iOS may prompt for **Local Network** access. Accept the prompt. If denied, go to **Settings → Privacy & Security → Local Network → RoleVault** and enable it.
+When using an IP address on your local network, iOS may prompt for **Local Network** access. Accept the prompt. If denied, go to **Settings → Privacy & Security → Local Network → RoleVault** and enable it.
 
 ### Token refresh loop
 If you see repeated 401s followed by logout:
-- Verify your LibreChat `/api/auth/refresh` endpoint is reachable
-- Check that the refresh token has not expired (default LibreChat expiry is 7 days)
+- Verify the `/api/auth/refresh` endpoint is reachable
+- Check that the refresh token has not expired
 - Clear Keychain data: delete and reinstall the app, or use **Profile → Logout**
 
 ### Fastlane signing failures

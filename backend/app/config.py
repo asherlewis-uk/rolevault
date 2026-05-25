@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     debug: bool = False
 
     database_url: str = "postgresql+asyncpg://rolevault:rolevault@localhost:5432/rolevault"
-    librechat_db_url: str = "postgresql+asyncpg://librechat:librechat@localhost:5432/librechat"
 
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"

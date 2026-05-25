@@ -206,6 +206,7 @@ export default function Chat() {
                     {isActive && (
                       <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-sidebar-background" />
                     )}
+          </AnimatePresence>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{char?.name}</p>
@@ -251,17 +252,17 @@ export default function Chat() {
             borderBottom: "1px solid hsl(var(--border) / 0.4)",
           }}>
 
-          {/* Back */}
-          <Link to="/" className="w-9 h-9 flex items-center justify-center text-foreground/70 hover:text-foreground transition-colors flex-shrink-0 -ml-1">
+          {/* Back — go to character list, not home */}
+          <Link to="/discover" className="w-9 h-9 flex items-center justify-center text-foreground/70 hover:text-foreground transition-colors flex-shrink-0 -ml-1">
             <ChevronLeft className="w-5 h-5" strokeWidth={2} />
           </Link>
 
           {/* Centred title block */}
-          <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none">
+          <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none max-w-[60%]">
             <Link to={`/character/${character.id}`} className="pointer-events-auto">
-              <p className="font-display font-bold text-foreground text-[15px] leading-tight">{character.name}</p>
+              <p className="font-display font-bold text-foreground text-[15px] leading-tight truncate">{character.name}</p>
             </Link>
-            <p className="text-[11px] text-muted-foreground/55 leading-none mt-0.5">AI Character</p>
+            <p className="text-[11px] text-muted-foreground/55 leading-none mt-0.5 truncate">Talking as You</p>
           </div>
 
           {/* Right actions */}
@@ -298,10 +299,13 @@ export default function Chat() {
           </div>
 
           <div className="max-w-2xl mx-auto space-y-5 relative z-10">
-            {/* Character intro banner */}
+          {/* Character intro banner — shown only before first user message */}
+          <AnimatePresence>
+          {messages.length <= 1 && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.5 }}
               className="flex flex-col items-center py-6 text-center"
             >
@@ -320,6 +324,7 @@ export default function Chat() {
               <p className="text-xs text-muted-foreground/70 mt-0.5">{character.category} · {character.rating}</p>
               <div className="divider-glow w-32 mt-4" />
             </motion.div>
+          )}
 
             <AnimatePresence initial={false}>
               {messages.map((msg, idx) => (
@@ -414,7 +419,7 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Composer */}
+        {/* Composer — debranded, no dead controls */}
         <div
           className="flex-shrink-0 px-4 py-3"
           style={{
@@ -425,65 +430,48 @@ export default function Chat() {
             borderTop: "1px solid hsl(var(--border) / 0.4)",
           }}
         >
-          <div className="max-w-2xl mx-auto flex items-center gap-2">
+          <div className="max-w-2xl mx-auto flex items-center gap-3">
 
-            {/* + */}
-            <button className="w-9 h-9 flex-shrink-0 flex items-center justify-center text-muted-foreground/70 hover:text-foreground transition-colors touch-target">
-              <Plus className="w-[22px] h-[22px]" strokeWidth={1.8} />
-            </button>
+            {/* Text area — full width with breathing room */}
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message…"
+              rows={1}
+              className="flex-1 rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/40 font-body text-sm resize-none focus:outline-none transition-colors duration-200 block"
+              style={{
+                background: "hsl(var(--background) / 0.5)",
+                border: "1px solid hsl(var(--border) / 0.6)",
+                maxHeight: "6rem",
+                overflowY: "auto",
+                lineHeight: "1.45",
+              }}
+              onFocus={chatFocus.handleFocus}
+              onBlur={chatFocus.handleBlur}
+              onInput={(e) => {
+                const t = e.currentTarget;
+                t.style.height = "auto";
+                t.style.height = Math.min(t.scrollHeight, 96) + "px";
+              }}
+            />
 
-            {/* Pill input */}
-            <div className="flex-1">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={`Type your message…`}
-                rows={1}
-                className="w-full rounded-full px-4 py-2.5 text-foreground placeholder:text-muted-foreground/40 font-body text-sm resize-none focus:outline-none transition-colors duration-200 block"
-                style={{
-                  background: "hsl(var(--background) / 0.5)",
-                  border: "1px solid hsl(var(--border) / 0.6)",
-                  maxHeight: "6rem",
-                  overflowY: "auto",
-                  lineHeight: "1.4",
-                }}
-                onFocus={chatFocus.handleFocus}
-                onBlur={chatFocus.handleBlur}
-                onInput={(e) => {
-                  const t = e.currentTarget;
-                  t.style.height = "auto";
-                  t.style.height = Math.min(t.scrollHeight, 96) + "px";
-                }}
-              />
-            </div>
-
-            {/* Send — filled circle */}
+            {/* Send button — always visible, distinct gradient pill */}
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              className="w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center touch-target transition-all duration-200 active:scale-95"
+              className="flex-shrink-0 h-10 px-4 rounded-full flex items-center justify-center gap-1.5 font-semibold text-sm transition-all duration-200 active:scale-95 touch-target disabled:opacity-40"
               style={{
-                background: input.trim() ? "var(--gradient-primary)" : "hsl(var(--muted) / 0.55)",
-                boxShadow: input.trim() ? "0 3px 12px hsl(var(--primary) / 0.3)" : "none",
+                background: "var(--gradient-primary)",
+                boxShadow: "0 3px 14px hsl(var(--primary) / 0.30)",
+                color: "hsl(var(--primary-foreground))",
               }}
+              aria-label="Send message"
             >
-              <Send
-                className="w-4 h-4"
-                style={{ color: input.trim() ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground) / 0.45)" }}
-              />
+              <Send className="w-4 h-4" />
+              Send
             </button>
 
-            {/* Mic — filled circle */}
-            <button
-              className="w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center text-muted-foreground/70 touch-target transition-colors"
-              style={{
-                background: "hsl(var(--muted) / 0.55)",
-                border: "1px solid hsl(var(--border) / 0.35)",
-              }}
-            >
-              <Mic className="w-4 h-4" />
-            </button>
           </div>
         </div>
 

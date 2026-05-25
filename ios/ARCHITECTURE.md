@@ -8,7 +8,7 @@
 | Local Persistence | SwiftData |
 | Secure Storage | Keychain (via Security framework) |
 | Networking | URLSession + async/await |
-| Backend | LibreChat (existing instance) |
+| Backend | RoleVault API (FastAPI + PostgreSQL) |
 | Build Tool | XcodeGen |
 | CI/CD | Fastlane + GitHub Actions |
 | Distribution | TestFlight (personal/open-source) |
@@ -45,7 +45,7 @@
 │ isFavorite      │
 │ createdAt       │
 │ updatedAt       │
-│ libreChatAgentId│
+│ remoteCharacterId│
 └─────────────────┘
 ```
 
@@ -56,7 +56,7 @@
 
 ### Design Rationale
 - SwiftData is used over Core Data for first-class SwiftUI integration, `@Query`, and modern type-safe predicates.
-- `LibreChatAgentId` links local characters to remote LibreChat agents for sync.
+- `remoteCharacterId` links local characters to remote RoleVault API characters for sync.
 - `Persona.isActive` determines which user identity is injected into chat context.
 - `GalleryMoment.imageData` stores exported chat screenshots/memories locally.
 
@@ -72,7 +72,7 @@
 ├─────────────────────────────────────────────┤
 │  AuthService │ ChatService │ AgentService   │
 ├─────────────────────────────────────────────┤
-│         LibreChatAPI (URLRequest)           │
+│         RoleVaultAPI (URLRequest)           │
 ├─────────────────────────────────────────────┤
 │     TokenInterceptor (refresh logic)        │
 ├─────────────────────────────────────────────┤
@@ -84,22 +84,25 @@
 
 ### Endpoint Mapping
 
-| Feature | LibreChat Endpoint | Local RoleVault Layer |
-|---------|-------------------|----------------------|
+| Feature | RoleVault Endpoint | Local Layer |
+|---------|-------------------|-------------|
+| Register | `POST /api/auth/register` | `AuthService.register()` |
 | Login | `POST /api/auth/login` | `AuthService.login()` |
-| Refresh | `GET /api/auth/refresh` | `TokenInterceptor` auto-refresh |
+| Refresh | `POST /api/auth/refresh` | `TokenInterceptor` auto-refresh |
 | Logout | `POST /api/auth/logout` | `AuthService.logout()` |
-| Chat | `POST /api/ask` | `ChatService.sendMessage()` |
-| List Convos | `GET /api/convos` | `ChatService.fetchConversations()` |
-| Messages | `GET /api/messages/{id}` | `ChatService.fetchMessages()` |
-| List Agents | `GET /api/agents` | `AgentService.fetchAgents()` |
-| Create Agent | `POST /api/agents` | `AgentService.createAgent()` |
+| Apple Sign In | `POST /api/auth/apple` | `AuthService.appleAuth()` |
+| Magic Link | `POST /api/auth/magic-link/request` + `POST /api/auth/magic-link/verify` | `AuthService.requestMagicLink()` / `verifyMagicLink()` |
+| Chat | `POST /api/chat` | `ChatService.sendMessage()` |
+| List Convos | `GET /api/conversations` | `ChatService.fetchConversations()` |
+| Messages | `GET /api/conversations/{id}/messages` | `ChatService.fetchMessages()` |
+| List Characters | `GET /api/characters` | `CharacterStore.fetchCharacters()` |
+| Create Character | `POST /api/characters` | `CharacterStore.createCharacter()` |
 | Config | `GET /api/config` | `ConfigService.fetchConfig()` |
 
 ### Auth Flow
 1. User submits email/password → `AuthService.login()` → stores JWT in Keychain.
 2. Every outgoing request reads JWT from Keychain via `TokenInterceptor`.
-3. On 401, interceptor calls `GET /api/auth/refresh`, updates Keychain, and retries original request once.
+3. On 401, interceptor calls `POST /api/auth/refresh`, updates Keychain, and retries original request once.
 4. Logout clears Keychain and SwiftData conversation cache.
 
 ### Error Handling
@@ -149,7 +152,7 @@ ios/
     │   │   ├── AgentModels.swift
     │   │   └── ConfigModels.swift
     │   ├── APIError.swift
-    │   ├── LibreChatAPI.swift
+    │   ├── RoleVaultAPI.swift
     │   ├── TokenInterceptor.swift
     │   ├── AuthService.swift
     │   ├── ChatService.swift

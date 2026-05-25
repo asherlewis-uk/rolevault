@@ -29,7 +29,7 @@
 - macOS with Xcode 15+
 - Apple Developer account (paid)
 - App Store Connect API Key for Fastlane uploads
-- Running LibreChat backend (default: `http://localhost:3080`)
+- Running RoleVault API backend (default: `https://backend.asherlewis.online`)
 
 ## Project Structure
 
@@ -38,8 +38,8 @@ See `ARCHITECTURE.md` for full design rationale, schema diagrams, and API mappin
 ## Configuration
 
 Backend URL can be changed in-app via **Profile → Backend**, or by editing:
-- `LibreChatAPI.shared.baseURL` programmatically
-- `UserDefaults` key `librechat_base_url`
+- `RoleVaultAPI.shared.baseURL` programmatically
+- `UserDefaults` key `rolevault_base_url`
 
 ## Tech Stack
 

@@ -6,14 +6,14 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
-from sqlalchemy.exc import IntegrityError, ProgrammingError
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 import secrets
 from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
-from app.models import User, LibreChatUser, MagicLinkToken
+from app.models import User, MagicLinkToken
 from app.schemas import (
     UserCreate, LoginRequest, TokenResponse, RefreshRequest,
     UserResponse, AppleAuthRequest, MagicLinkRequest, MagicLinkVerifyRequest,
@@ -45,50 +45,31 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
     hashed = hash_password(payload.password)
     email_lower = payload.email.lower().strip()
 
-    # 1. Insert into LibreChat users table (public.users)
-    lc_user = LibreChatUser(
+    user = User(
         id=uuid4(),
         email=email_lower,
         password=hashed,
-        name=payload.display_name,
-        username=email_lower.split("@")[0],
+        display_name=payload.display_name,
+        avatar_url=payload.avatar_url,
     )
-    db.add(lc_user)
+    db.add(user)
     try:
-        await db.flush()
-    except (IntegrityError, ProgrammingError):
+        await db.commit()
+        await db.refresh(user)
+    except IntegrityError:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered",
         )
 
-    # 2. Insert into RoleVault users table
-    rv_user = User(
-        id=lc_user.id,
-        email=email_lower,
-        display_name=payload.display_name,
-        avatar_url=payload.avatar_url,
-    )
-    db.add(rv_user)
-    try:
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered in RoleVault",
-        )
-
-    await db.refresh(rv_user)
-
-    access_token = create_access_token(rv_user.id)
-    refresh_token = create_refresh_token(rv_user.id)
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        user=_user_response(rv_user),
+        user=_user_response(user),
     )
 
 
@@ -96,46 +77,22 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     email_lower = payload.email.lower().strip()
 
-    # 1. Verify against LibreChat users table
-    result = await db.execute(select(LibreChatUser).where(LibreChatUser.email == email_lower))
-    lc_user = result.scalar_one_or_none()
+    result = await db.execute(select(User).where(User.email == email_lower))
+    user = result.scalar_one_or_none()
 
-    if lc_user is None or not verify_password(payload.password, lc_user.password):
+    if user is None or user.password == "" or not verify_password(payload.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
 
-    # 2. Ensure RoleVault user record exists
-    result = await db.execute(select(User).where(User.id == lc_user.id))
-    rv_user = result.scalar_one_or_none()
-
-    if rv_user is None:
-        rv_user = User(
-            id=lc_user.id,
-            email=email_lower,
-            display_name=lc_user.name,
-            avatar_url=lc_user.avatar,
-        )
-        db.add(rv_user)
-        await db.commit()
-        await db.refresh(rv_user)
-    else:
-        # Sync display name / avatar if changed in LibreChat
-        if rv_user.display_name != lc_user.name:
-            rv_user.display_name = lc_user.name
-        if rv_user.avatar_url != lc_user.avatar:
-            rv_user.avatar_url = lc_user.avatar
-        await db.commit()
-        await db.refresh(rv_user)
-
-    access_token = create_access_token(rv_user.id)
-    refresh_token = create_refresh_token(rv_user.id)
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        user=_user_response(rv_user),
+        user=_user_response(user),
     )
 
 
@@ -221,58 +178,43 @@ async def apple_auth(payload: AppleAuthRequest, db: AsyncSession = Depends(get_d
 
     # 5. Look up by apple_user_id
     result = await db.execute(select(User).where(User.apple_user_id == apple_user_id))
-    rv_user = result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
 
-    if rv_user:
+    if user:
         # Existing user — return RoleVault JWT
-        access_token = create_access_token(rv_user.id)
-        refresh_token = create_refresh_token(rv_user.id)
+        access_token = create_access_token(user.id)
+        refresh_token = create_refresh_token(user.id)
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            user=_user_response(rv_user),
+            user=_user_response(user),
         )
 
-    # 6. New user — create in both tables
+    # 6. New user — create in RoleVault table only
     display_name = email.split("@")[0] if email else "User"
-    new_id = uuid4()
 
-    lc_user = LibreChatUser(
-        id=new_id,
-        email=email or f"{apple_user_id}@appleid.apple",
-        password="",  # Apple users don't use password auth
-        name=display_name,
-        username=apple_user_id,
-    )
-    db.add(lc_user)
-    try:
-        await db.flush()
-    except (IntegrityError, ProgrammingError):
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email conflict in LibreChat")
-
-    rv_user = User(
-        id=new_id,
+    user = User(
+        id=uuid4(),
         email=email or f"{apple_user_id}@appleid.apple",
         display_name=display_name,
         apple_user_id=apple_user_id,
+        password="",  # Apple users don't use password auth
     )
-    db.add(rv_user)
+    db.add(user)
     try:
         await db.commit()
+        await db.refresh(user)
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists in RoleVault")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email conflict")
 
-    await db.refresh(rv_user)
-
-    access_token = create_access_token(rv_user.id)
-    refresh_token = create_refresh_token(rv_user.id)
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        user=_user_response(rv_user),
+        user=_user_response(user),
     )
 
 
@@ -341,64 +283,46 @@ async def verify_magic_link(payload: MagicLinkVerifyRequest, db: AsyncSession = 
     # Find or create user
     email_lower = magic.email.lower().strip()
     result = await db.execute(select(User).where(User.email == email_lower))
-    rv_user = result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
 
-    if rv_user:
+    if user:
         # Existing user — return JWT
-        access_token = create_access_token(rv_user.id)
-        refresh_token = create_refresh_token(rv_user.id)
+        access_token = create_access_token(user.id)
+        refresh_token = create_refresh_token(user.id)
         await db.commit()
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            user=_user_response(rv_user),
+            user=_user_response(user),
         )
 
-    # New user — create in both tables (same pattern as Apple auth)
+    # New user — create in RoleVault table only
     display_name = email_lower.split("@")[0]
-    new_id = uuid4()
 
-    lc_user = LibreChatUser(
-        id=new_id,
-        email=email_lower,
-        password="",  # magic link users don't have passwords
-        name=display_name,
-        username=email_lower.split("@")[0],
-    )
-    db.add(lc_user)
-    try:
-        await db.flush()
-    except (IntegrityError, ProgrammingError):
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email conflict in LibreChat",
-        )
-
-    rv_user = User(
-        id=new_id,
+    user = User(
+        id=uuid4(),
         email=email_lower,
         display_name=display_name,
+        password="",  # magic link users don't have passwords
     )
-    db.add(rv_user)
+    db.add(user)
     try:
         await db.commit()
+        await db.refresh(user)
     except IntegrityError:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="User already exists in RoleVault",
+            detail="User already exists",
         )
 
-    await db.refresh(rv_user)
-
-    access_token = create_access_token(rv_user.id)
-    refresh_token = create_refresh_token(rv_user.id)
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        user=_user_response(rv_user),
+        user=_user_response(user),
     )
 
 
