@@ -39,13 +39,13 @@ struct CreateCharacterView: View {
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .fill(
                                     LinearGradient(
-                                        colors: [.blue, .purple, .pink],
+                                        colors: [RoleVaultColor.gradientPrimaryStart, RoleVaultColor.gradientPrimaryEnd],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
                                 )
                         )
-                        .shadow(color: .purple.opacity(0.4), radius: 16, x: 0, y: 8)
+                        .shadow(color: RoleVaultColor.glowPrimary, radius: 16, x: 0, y: 8)
                     }
                     .padding(.horizontal)
                     .padding(.bottom, 16)
@@ -253,10 +253,10 @@ struct CreateCharacterView: View {
                         .frame(width: 100, height: 120)
                         .background(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(viewModel.interactionMode == mode ? AnyShapeStyle(.indigo.opacity(0.3)) : AnyShapeStyle(.ultraThinMaterial))
+                                .fill(viewModel.interactionMode == mode ? AnyShapeStyle(RoleVaultColor.primary.opacity(0.3)) : AnyShapeStyle(.ultraThinMaterial))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(viewModel.interactionMode == mode ? .indigo.opacity(0.5) : .white.opacity(0.15), lineWidth: 1.5)
+                                        .stroke(viewModel.interactionMode == mode ? RoleVaultColor.primary.opacity(0.5) : .white.opacity(0.15), lineWidth: 1.5)
                                 )
                         )
                         .scaleEffect(viewModel.interactionMode == mode ? 1.05 : 1)
@@ -281,7 +281,7 @@ struct CreateCharacterView: View {
                     viewModel.addJournalEntry()
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.indigo)
+                .tint(RoleVaultColor.primary)
                 .disabled(viewModel.journalText.isEmpty)
 
                 if !viewModel.journalEntries.isEmpty {
@@ -342,10 +342,10 @@ struct CreateCharacterView: View {
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .fill(.orange.opacity(0.12))
+                                    .fill(RoleVaultColor.bubbleAIBg)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                            .stroke(.orange.opacity(0.2), lineWidth: 1)
+                                            .stroke(RoleVaultColor.bubbleAIBorder, lineWidth: 1)
                                     )
                             )
                             .background(
@@ -452,7 +452,7 @@ struct GradientSlider: View {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(
                         LinearGradient(
-                            colors: [.blue, .purple, .pink],
+                            colors: [RoleVaultColor.gradientPrimaryStart, RoleVaultColor.gradientPrimaryEnd],
                             startPoint: .leading,
                             endPoint: .trailing
                         )

@@ -105,7 +105,7 @@ struct HomeView: View {
                 CategoryPill(
                     title: "All",
                     isSelected: selectedCategory == nil,
-                    color: .indigo
+                    color: RoleVaultColor.primary
                 ) {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         HapticEngine.selection()
@@ -131,14 +131,6 @@ struct HomeView: View {
     }
 
     private func categoryColor(for category: CharacterCategory) -> Color {
-        switch category {
-        case .fantasy, .vampires, .werewolves: return .purple
-        case .romance: return .pink
-        case .gaming, .rpg, .powerful, .mafia: return .orange
-        case .assistant, .learning, .creating: return .blue
-        case .family, .lifestyle, .human, .humor: return .green
-        case .history, .school: return .brown
-        default: return .indigo
-        }
+        category.spectralColor
     }
 }

@@ -36,7 +36,7 @@ struct SettingsView: View {
                     } else if let error = ConfigService.shared.configError {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(RoleVaultColor.secondary)
                             Text(error)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)

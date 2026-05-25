@@ -8,46 +8,53 @@ struct AuroraBackground: View {
     }
 
     private var palette: [Color] {
+        // Web background model: warm charcoal base (#0E0B09 to #15110D)
+        // with amber/crimson bloom at 4-8% opacity. No cool navy or saturated aurora.
+        let base = RoleVaultColor.stageBase
+        let elevated = RoleVaultColor.stageElevated
+        let bloomAmber = RoleVaultColor.bloomAmber
+        let bloomCrimson = RoleVaultColor.bloomCrimson
+
         switch hour {
         case 6..<12:
-            // Warm sunrise
+            // Morning: warm charcoal with soft amber bloom
             return [
-                Color(red: 1.0, green: 0.45, blue: 0.25),
-                Color(red: 1.0, green: 0.7, blue: 0.4),
-                Color(red: 0.95, green: 0.5, blue: 0.6),
-                Color(red: 0.85, green: 0.35, blue: 0.45),
-                Color(red: 0.7, green: 0.4, blue: 0.6),
-                Color(red: 1.0, green: 0.55, blue: 0.3)
+                base,
+                elevated,
+                bloomAmber,
+                base,
+                elevated,
+                bloomAmber.opacity(0.5)
             ]
         case 12..<18:
-            // Cool daylight
+            // Day: neutral warm charcoal, subdued bloom
             return [
-                Color(red: 0.25, green: 0.6, blue: 0.95),
-                Color(red: 0.4, green: 0.8, blue: 0.9),
-                Color(red: 0.6, green: 0.9, blue: 0.85),
-                Color(red: 0.3, green: 0.7, blue: 0.95),
-                Color(red: 0.5, green: 0.85, blue: 1.0),
-                Color(red: 0.35, green: 0.65, blue: 0.9)
+                base,
+                elevated,
+                base,
+                elevated,
+                base,
+                elevated
             ]
         case 18..<22:
-            // Twilight
+            // Evening: warm charcoal with crimson bloom
             return [
-                Color(red: 0.4, green: 0.2, blue: 0.6),
-                Color(red: 0.6, green: 0.3, blue: 0.7),
-                Color(red: 0.8, green: 0.4, blue: 0.6),
-                Color(red: 0.3, green: 0.25, blue: 0.65),
-                Color(red: 0.5, green: 0.35, blue: 0.75),
-                Color(red: 0.45, green: 0.3, blue: 0.6)
+                base,
+                elevated,
+                bloomCrimson,
+                base,
+                elevated,
+                bloomCrimson.opacity(0.5)
             ]
         default:
-            // Midnight
+            // Night: deep warm charcoal, minimal bloom
             return [
-                Color(red: 0.05, green: 0.05, blue: 0.15),
-                Color(red: 0.1, green: 0.08, blue: 0.25),
-                Color(red: 0.15, green: 0.1, blue: 0.35),
-                Color(red: 0.08, green: 0.06, blue: 0.2),
-                Color(red: 0.12, green: 0.09, blue: 0.3),
-                Color(red: 0.06, green: 0.05, blue: 0.18)
+                base,
+                elevated,
+                base,
+                base,
+                elevated,
+                base
             ]
         }
     }

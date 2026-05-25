@@ -17,7 +17,7 @@ struct ActivityCenterView: View {
                 subtitle: "\(character.name) was added to \(character.category.rawValue).",
                 timeAgo: character.createdAt.timeAgo(),
                 icon: "sparkles",
-                color: .purple
+                color: SpectralAccent.violet
             ))
         }
 
@@ -27,7 +27,7 @@ struct ActivityCenterView: View {
                 subtitle: convo.lastMessagePreview.isEmpty ? "New conversation started." : "\(convo.title): \(convo.lastMessagePreview)",
                 timeAgo: convo.lastMessageAt.timeAgo(),
                 icon: "message.fill",
-                color: .blue
+                color: SpectralAccent.emerald
             ))
         }
 
@@ -37,7 +37,7 @@ struct ActivityCenterView: View {
                 subtitle: moment.caption,
                 timeAgo: moment.createdAt.timeAgo(),
                 icon: "photo.fill",
-                color: .pink
+                color: SpectralAccent.rose
             ))
         }
 

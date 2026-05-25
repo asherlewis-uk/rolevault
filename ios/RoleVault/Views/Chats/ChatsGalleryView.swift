@@ -184,11 +184,11 @@ struct MomentRow: View {
         HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(.indigo.opacity(0.15))
+                    .fill(RoleVaultColor.primary.opacity(0.15))
                     .frame(width: 44, height: 44)
                 Image(systemName: "text.bubble.fill")
                     .font(.callout)
-                    .foregroundStyle(.indigo)
+                    .foregroundStyle(RoleVaultColor.primary)
             }
 
             VStack(alignment: .leading, spacing: 4) {

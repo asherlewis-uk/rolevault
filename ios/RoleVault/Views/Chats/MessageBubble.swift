@@ -60,15 +60,15 @@ struct MessageBubble: View {
             }
 
             Text(displayText)
-                .font(.body)
+                .font(RoleVaultTypography.body)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(isUser ? AnyShapeStyle(.blue.opacity(0.2)) : AnyShapeStyle(.orange.opacity(0.12)))
+                        .fill(isUser ? AnyShapeStyle(RoleVaultColor.bubbleUserBg) : AnyShapeStyle(RoleVaultColor.bubbleAIBg))
                         .overlay(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(isUser ? .blue.opacity(0.25) : .orange.opacity(0.2), lineWidth: 1)
+                                .stroke(isUser ? RoleVaultColor.bubbleUserBorder : RoleVaultColor.bubbleAIBorder, lineWidth: 1)
                         )
                 )
                 .background(

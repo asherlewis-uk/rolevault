@@ -13,6 +13,7 @@
 		04109C696C0591AC9185021C /* CharacterHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5A3A2F6CC3743C1C82243A /* CharacterHeader.swift */; };
 		06BC7117758CE38A50F31030 /* DynamicIslandActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E597D491685AB0F958B5675 /* DynamicIslandActivity.swift */; };
 		09B73FB7D07A2936E46FE99A /* RoleVaultAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADA23FC763F9791A36C07C9 /* RoleVaultAPI.swift */; };
+		0CD930A15F16E76B5E2F5637 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6057362A0743C41294CE0F79 /* OnboardingView.swift */; };
 		120C7CED29BFCD46F57212FC /* GalleryMoment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B42D57CB8F99874FFF507C2 /* GalleryMoment.swift */; };
 		1A1707CEC6E64F7307566338 /* CreateCharacterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 678305050A99D6F8B643292E /* CreateCharacterView.swift */; };
 		1ACD05ED3AECCC461134D4FC /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A220EC154CDB4745DDF8BA01 /* APIError.swift */; };
@@ -36,8 +37,6 @@
 		6CA76A2923F179398FE04D1B /* ChatsGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C22994EFD3865738993E89E /* ChatsGalleryView.swift */; };
 		6D4AD3F193AF54EAD64597E5 /* MessageInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24869795103D0A7213AC4AED /* MessageInputBar.swift */; };
 		7F46C39235C8AA271F941404 /* GalleryGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6AF93FAC804C2E37F4C5687 /* GalleryGrid.swift */; };
-		EB90820BF6F04235BA5EDD9C /* GalleryThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F71658B2FC4B67833135FE /* GalleryThumbnail.swift */; };
-		D612E51131724BB4A62C7123 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBA4B09E1B9491ABF26B419 /* OnboardingView.swift */; };
 		80029121504E8EC1F12DF655 /* CascadeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D667EEDC3C14AFA459878B4C /* CascadeStore.swift */; };
 		85F4A44196F94CD3B62F112F /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06C04F204E3068AFA85C39AA /* AuthModels.swift */; };
 		8AED97C8DD78334637688BA3 /* ParticleEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6FBA93C12CF85FE1206419C /* ParticleEffects.swift */; };
@@ -46,6 +45,7 @@
 		993738A95AA39FE8E07E6A4C /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBCA14ED6CD9B20DCC43A7F /* AuthService.swift */; };
 		9BC5DE1336C69812072A4F47 /* RemoteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B341AB6E575A653BF6DD548 /* RemoteModels.swift */; };
 		9C3B552E6D2C1DC4EC3E6A4E /* CharacterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270B241979D8FBE9444D9B28 /* CharacterStore.swift */; };
+		9E1F599AAA973D2C63364F5F /* SpectralAccent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D54AC452399686367398B63E /* SpectralAccent.swift */; };
 		9EC367D0E8A3EC5B626CEF7E /* ConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3B8A041DF02255F4F62E24 /* ConfigService.swift */; };
 		A036B00F6DB9FED285AEE568 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2551AAAA1A4ABB18CC286B36 /* KeychainManager.swift */; };
 		A2B9235CD3C95BC0BAA3B471 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C014D4849309218F6F6AE1 /* HomeView.swift */; };
@@ -55,6 +55,7 @@
 		B9EF5A4C5BE87668B32FB573 /* Character.swift in Sources */ = {isa = PBXBuildFile; fileRef = 815A68BB9DEAE390562F3D5A /* Character.swift */; };
 		BB7111DB9C41002AFAFC0ABB /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B4B56358AADFE07CDD44BC6E /* Preview Assets.xcassets */; };
 		BF6D19E2B9163E32D03AF9B8 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F040207C03AB626BFA7D976 /* MessageBubble.swift */; };
+		C212CBACD04848473CFB365B /* RoleVaultTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F55213CE48C3B831B2169B8 /* RoleVaultTypography.swift */; };
 		C4220FD2E852249ED8B8B43C /* MessageWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E98DD1C3324D95C781D643F /* MessageWrapper.swift */; };
 		C6D5ED4EDF46EB2F689CAC0B /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1363FB88D82845EEAEE7A6F7 /* HapticEngine.swift */; };
 		CA02CED7A8BED2B45C95BCCC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E793A1F7BF99C35DC2D50BB4 /* SettingsView.swift */; };
@@ -62,10 +63,12 @@
 		D3BF7F31ED2AD7963CEDF8BF /* TypingIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D8246FB10C37EE3B09D9423 /* TypingIndicator.swift */; };
 		D6ED86B554DA72562CE9F23B /* JournalEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC50ED37437AD0CA7B354B73 /* JournalEntry.swift */; };
 		D95D8513437752A53219335F /* RoleVaultUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEE5BAC90BDB7EF8BF62D2D /* RoleVaultUITests.swift */; };
+		E33FF0157925128D67AD3B29 /* GalleryThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = D03C794B5C2BF86EFFF1F8EE /* GalleryThumbnail.swift */; };
 		E5B0077BE8DAA0722E0FEF96 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01960B6D0E4ED86FD02BA72B /* HomeViewModel.swift */; };
 		E821F90008E0795537E7BF31 /* Persona.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F6716D26B0DC8CDA57536A /* Persona.swift */; };
 		E9B84062D6E1017B32861625 /* InferenceAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 165D657EBB50B0C628E274B8 /* InferenceAPI.swift */; };
 		EE223F92D89B2629DFABE4F7 /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7A7C615D6ABF0C7809E13C /* ChatService.swift */; };
+		FC969F0C86AE4C243ABADF56 /* RoleVaultColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C147089823854D4565F503D /* RoleVaultColor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +101,7 @@
 		1363FB88D82845EEAEE7A6F7 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
 		165D657EBB50B0C628E274B8 /* InferenceAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceAPI.swift; sourceTree = "<group>"; };
 		1A3B8A041DF02255F4F62E24 /* ConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigService.swift; sourceTree = "<group>"; };
+		1F55213CE48C3B831B2169B8 /* RoleVaultTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultTypography.swift; sourceTree = "<group>"; };
 		1F7A7C615D6ABF0C7809E13C /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
 		24869795103D0A7213AC4AED /* MessageInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInputBar.swift; sourceTree = "<group>"; };
 		2551AAAA1A4ABB18CC286B36 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
@@ -110,7 +114,9 @@
 		43EC0E0BD68DB334FB613935 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
 		47F59D375384BAD0CB61A23B /* RoleVaultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultTests.swift; sourceTree = "<group>"; };
 		5F040207C03AB626BFA7D976 /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		6057362A0743C41294CE0F79 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		678305050A99D6F8B643292E /* CreateCharacterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateCharacterView.swift; sourceTree = "<group>"; };
+		6C147089823854D4565F503D /* RoleVaultColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultColor.swift; sourceTree = "<group>"; };
 		6E98DD1C3324D95C781D643F /* MessageWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageWrapper.swift; sourceTree = "<group>"; };
 		71880D1BAF0DE9FE6AB15DB6 /* TokenInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenInterceptor.swift; sourceTree = "<group>"; };
 		76B202E6494737A912DF5175 /* BackendConfigView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendConfigView.swift; sourceTree = "<group>"; };
@@ -134,11 +140,11 @@
 		BCCE975431F3A21A652A7368 /* RoleVault.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoleVault.entitlements; sourceTree = "<group>"; };
 		BDA2EE936DC580A7941A47E2 /* RoleVaultWidgetAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultWidgetAttributes.swift; sourceTree = "<group>"; };
 		C6AF93FAC804C2E37F4C5687 /* GalleryGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryGrid.swift; sourceTree = "<group>"; };
-		F2F71658B2FC4B67833135FE /* GalleryThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryThumbnail.swift; sourceTree = "<group>"; };
-		6EBA4B09E1B9491ABF26B419 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		C7C4D5218758E720480FA500 /* LiquidGlassPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassPanel.swift; sourceTree = "<group>"; };
 		CEEE5BAC90BDB7EF8BF62D2D /* RoleVaultUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleVaultUITests.swift; sourceTree = "<group>"; };
 		CFC96609715CA90B3B9F1B77 /* PersonaManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonaManagerView.swift; sourceTree = "<group>"; };
+		D03C794B5C2BF86EFFF1F8EE /* GalleryThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryThumbnail.swift; sourceTree = "<group>"; };
+		D54AC452399686367398B63E /* SpectralAccent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectralAccent.swift; sourceTree = "<group>"; };
 		D667EEDC3C14AFA459878B4C /* CascadeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CascadeStore.swift; sourceTree = "<group>"; };
 		DB62D558F421C34A04FD05D7 /* CreateCharacterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateCharacterViewModel.swift; sourceTree = "<group>"; };
 		E4487D484E52A7800A557FD5 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
@@ -244,6 +250,9 @@
 				1363FB88D82845EEAEE7A6F7 /* HapticEngine.swift */,
 				C7C4D5218758E720480FA500 /* LiquidGlassPanel.swift */,
 				B6FBA93C12CF85FE1206419C /* ParticleEffects.swift */,
+				6C147089823854D4565F503D /* RoleVaultColor.swift */,
+				1F55213CE48C3B831B2169B8 /* RoleVaultTypography.swift */,
+				D54AC452399686367398B63E /* SpectralAccent.swift */,
 			);
 			path = Common;
 			sourceTree = "<group>";
@@ -267,7 +276,7 @@
 		B56A3C638B520E24DA9AEEA7 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
-				6EBA4B09E1B9491ABF26B419 /* OnboardingView.swift */,
+				6057362A0743C41294CE0F79 /* OnboardingView.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -346,7 +355,7 @@
 				2C22994EFD3865738993E89E /* ChatsGalleryView.swift */,
 				3A6B028D2A0A65FB7B5612F7 /* EditCharacterSheet.swift */,
 				C6AF93FAC804C2E37F4C5687 /* GalleryGrid.swift */,
-				F2F71658B2FC4B67833135FE /* GalleryThumbnail.swift */,
+				D03C794B5C2BF86EFFF1F8EE /* GalleryThumbnail.swift */,
 				5F040207C03AB626BFA7D976 /* MessageBubble.swift */,
 				24869795103D0A7213AC4AED /* MessageInputBar.swift */,
 				2D8246FB10C37EE3B09D9423 /* TypingIndicator.swift */,
@@ -530,9 +539,8 @@
 				06BC7117758CE38A50F31030 /* DynamicIslandActivity.swift in Sources */,
 				392D2E6ADCA97361655FCCE2 /* EditCharacterSheet.swift in Sources */,
 				7F46C39235C8AA271F941404 /* GalleryGrid.swift in Sources */,
-				EB90820BF6F04235BA5EDD9C /* GalleryThumbnail.swift in Sources */,
-				D612E51131724BB4A62C7123 /* OnboardingView.swift in Sources */,
 				120C7CED29BFCD46F57212FC /* GalleryMoment.swift in Sources */,
+				E33FF0157925128D67AD3B29 /* GalleryThumbnail.swift in Sources */,
 				C6D5ED4EDF46EB2F689CAC0B /* HapticEngine.swift in Sources */,
 				A2B9235CD3C95BC0BAA3B471 /* HomeView.swift in Sources */,
 				E5B0077BE8DAA0722E0FEF96 /* HomeViewModel.swift in Sources */,
@@ -544,6 +552,7 @@
 				BF6D19E2B9163E32D03AF9B8 /* MessageBubble.swift in Sources */,
 				6D4AD3F193AF54EAD64597E5 /* MessageInputBar.swift in Sources */,
 				C4220FD2E852249ED8B8B43C /* MessageWrapper.swift in Sources */,
+				0CD930A15F16E76B5E2F5637 /* OnboardingView.swift in Sources */,
 				8AED97C8DD78334637688BA3 /* ParticleEffects.swift in Sources */,
 				E821F90008E0795537E7BF31 /* Persona.swift in Sources */,
 				351CC358908CF01C39829D65 /* PersonaManagerView.swift in Sources */,
@@ -552,8 +561,11 @@
 				9BC5DE1336C69812072A4F47 /* RemoteModels.swift in Sources */,
 				09B73FB7D07A2936E46FE99A /* RoleVaultAPI.swift in Sources */,
 				8AFA0FBAE8AF08537F7719C7 /* RoleVaultApp.swift in Sources */,
+				FC969F0C86AE4C243ABADF56 /* RoleVaultColor.swift in Sources */,
+				C212CBACD04848473CFB365B /* RoleVaultTypography.swift in Sources */,
 				B0ED203157F91C91AB988EDB /* RoleVaultWidgetAttributes.swift in Sources */,
 				CA02CED7A8BED2B45C95BCCC /* SettingsView.swift in Sources */,
+				9E1F599AAA973D2C63364F5F /* SpectralAccent.swift in Sources */,
 				6173104AF79535349EF61931 /* SwiftDataContainer.swift in Sources */,
 				59D8D928E58596EA4065C25A /* TokenInterceptor.swift in Sources */,
 				D3BF7F31ED2AD7963CEDF8BF /* TypingIndicator.swift in Sources */,

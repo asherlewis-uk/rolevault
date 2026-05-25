@@ -16,7 +16,7 @@ struct ProfileView: View {
                             NavigationLink {
                                 PersonaManagerView()
                             } label: {
-                                row(icon: "person.2.fill", title: "Personas", color: .blue)
+                                row(icon: "person.2.fill", title: "Personas", color: SpectralAccent.emerald)
                             }
 
                             NavigationLink {
@@ -28,7 +28,7 @@ struct ProfileView: View {
                             NavigationLink {
                                 BackendConfigView()
                             } label: {
-                                row(icon: "server.rack", title: "Backend", color: .orange)
+                                row(icon: "server.rack", title: "Backend", color: SpectralAccent.amber)
                             }
                         }
                     }

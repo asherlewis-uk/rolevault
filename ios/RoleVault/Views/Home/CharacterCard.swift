@@ -47,15 +47,20 @@ struct CharacterCard: View {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .stroke(.white.opacity(0.15), lineWidth: 1)
                     )
+                    .overlay(
+                        // Spectral rim light along top edge based on category
+                        character.category.rimLight
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    )
             )
             .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
-            .scaleEffect(isPressed ? 0.97 : 1)
+            .scaleEffect(isPressed ? 0.98 : 1)
         }
         .buttonStyle(.plain)
         .pressEvents {
-            withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { isPressed = true }
         } onRelease: {
-            withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { isPressed = false }
         }
     }
 

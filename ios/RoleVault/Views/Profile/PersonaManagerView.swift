@@ -103,7 +103,7 @@ struct PersonaRow: View {
 
             if persona.isActive {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(SpectralAccent.emerald)
             }
         }
         .padding()

@@ -25,15 +25,15 @@ struct OnboardingView: View {
 
             Image(systemName: "theatermasks.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(.indigo.gradient)
+                .foregroundStyle(RoleVaultColor.primary.gradient)
 
             VStack(spacing: 12) {
                 Text("Welcome to RoleVault")
-                    .font(.largeTitle.weight(.bold))
+                    .font(RoleVaultTypography.largeTitle)
                     .multilineTextAlignment(.center)
 
                 Text("Create AI characters with unique personalities. Chat using your own language models. Your characters, your data, your rules.")
-                    .font(.body)
+                    .font(RoleVaultTypography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -51,7 +51,7 @@ struct OnboardingView: View {
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.indigo)
+                            .fill(RoleVaultColor.primary)
                     )
             }
             .padding(.horizontal, 32)
@@ -68,21 +68,21 @@ struct OnboardingView: View {
             VStack(spacing: 28) {
                 featureRow(
                     icon: "person.fill.badge.plus",
-                    color: .purple,
+                    color: SpectralAccent.violet,
                     title: "Create",
                     description: "Design characters with backstories, personalities, and custom response styles."
                 )
 
                 featureRow(
                     icon: "bubble.left.and.bubble.right.fill",
-                    color: .blue,
+                    color: SpectralAccent.emerald,
                     title: "Chat",
                     description: "Have immersive conversations with any character. Switch personas to change how you interact."
                 )
 
                 featureRow(
                     icon: "slider.horizontal.3",
-                    color: .orange,
+                    color: SpectralAccent.amber,
                     title: "Customize",
                     description: "Edit characters, save favorite moments, and import/export via Tavern V2 cards."
                 )
@@ -101,7 +101,7 @@ struct OnboardingView: View {
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.indigo)
+                            .fill(RoleVaultColor.primary)
                     )
             }
             .padding(.horizontal, 32)
@@ -117,14 +117,14 @@ struct OnboardingView: View {
 
             Image(systemName: "sparkles")
                 .font(.system(size: 64))
-                .foregroundStyle(.indigo.gradient)
+                .foregroundStyle(RoleVaultColor.primary.gradient)
 
             VStack(spacing: 12) {
                 Text("You're all set")
-                    .font(.largeTitle.weight(.bold))
+                    .font(RoleVaultTypography.largeTitle)
 
                 Text("RoleVault connects to your inference server. Configure it in Settings, or start with the default server.")
-                    .font(.body)
+                    .font(RoleVaultTypography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -132,7 +132,7 @@ struct OnboardingView: View {
 
             VStack(spacing: 8) {
                 Text("Start by creating your first character, or browse shared characters on the Home screen.")
-                    .font(.subheadline)
+                    .font(RoleVaultTypography.secondary)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -154,7 +154,7 @@ struct OnboardingView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(.indigo)
+                        .fill(RoleVaultColor.primary)
                 )
             }
             .padding(.horizontal, 32)

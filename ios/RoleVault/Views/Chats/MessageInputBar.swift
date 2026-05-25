@@ -69,7 +69,7 @@ struct MessageInputBar: View {
                                     .background(.thinMaterial)
                             } else {
                                 LinearGradient(
-                                    colors: [.blue, .purple, .pink],
+                                    colors: [RoleVaultColor.gradientPrimaryStart, RoleVaultColor.gradientPrimaryEnd],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )

@@ -98,7 +98,7 @@ struct MainTabView: View {
             }
             .tag(4)
         }
-        .tint(.indigo)
+        .tint(RoleVaultColor.primary)
     }
 }
 
@@ -181,7 +181,7 @@ struct LoginView: View {
                                     .padding()
                                     .background(
                                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(.tint)
+                                            .fill(RoleVaultColor.primary)
                                     )
                                     .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1.0)
                                 }
@@ -249,7 +249,7 @@ struct LoginView: View {
                                             .padding()
                                             .background(
                                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                    .fill(.tint)
+                                                    .fill(RoleVaultColor.primary)
                                             )
                                             .opacity(magicLinkToken == nil ? 0.5 : 1.0)
                                         }

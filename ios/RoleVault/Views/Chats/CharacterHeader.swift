@@ -96,7 +96,7 @@ struct CharacterHeader: View {
     }
 
     private var statusColor: Color {
-        if isTyping { return .orange }
+        if isTyping { return RoleVaultColor.primary }
         return .clear
     }
 
