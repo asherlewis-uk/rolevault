@@ -33,6 +33,10 @@ type AppleAuth = {
 const appleAuthScriptUrl =
   "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
 
+function canShowMagicLinkDevToken() {
+  return import.meta.env.DEV || ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
 function getAppleAuth(): AppleAuth | null {
   const apple = (window as Window & { AppleID?: { auth?: Partial<AppleAuth> } }).AppleID;
   if (
@@ -92,6 +96,7 @@ export default function SignIn() {
   const appleClientId = import.meta.env.VITE_APPLE_CLIENT_ID?.trim();
   const appleRedirectURI =
     import.meta.env.VITE_APPLE_REDIRECT_URI || `${window.location.origin}/signin`;
+  const showMagicLinkDevToken = canShowMagicLinkDevToken();
   const appleAuthRef = useRef<AppleAuth | null>(null);
 
   const [mode, setMode] = useState<AuthMode>("password");
@@ -148,8 +153,13 @@ export default function SignIn() {
     setLoading(true);
     try {
       const res = await requestMagicLink(email);
+      if (res.token && !showMagicLinkDevToken) {
+        throw new Error(
+          "Magic link email is misconfigured for this deployment. Disable backend debug tokens or configure email delivery."
+        );
+      }
       setMagicLinkSent(true);
-      if (res.token) setMagicLinkDevToken(res.token);
+      setMagicLinkDevToken(res.token ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send magic link");
     } finally {

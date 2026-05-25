@@ -270,7 +270,7 @@ async def apple_auth(payload: AppleAuthRequest, db: AsyncSession = Depends(get_d
 async def request_magic_link(payload: MagicLinkRequest, db: AsyncSession = Depends(get_db)):
     """
     Request a magic link. Generates a single-use token valid for 15 minutes.
-    In dev mode the token is returned in the response body.
+    In dev mode the token can be returned in the response body when explicitly enabled.
     Future: send via Resend SMTP.
     """
     email_lower = payload.email.lower().strip()
@@ -293,7 +293,7 @@ async def request_magic_link(payload: MagicLinkRequest, db: AsyncSession = Depen
     db.add(magic)
     await db.commit()
 
-    if settings.debug:
+    if settings.debug and settings.magic_link_dev_tokens:
         return {
             "detail": "Magic link sent. Check your email.",
             "token": token,

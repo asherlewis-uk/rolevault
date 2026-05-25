@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { apiFetch } from "@/api/client";
 
 export interface AuthUser {
@@ -79,78 +79,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const handleTokenResponse = (res: TokenResponse) => {
+  const handleTokenResponse = useCallback((res: TokenResponse) => {
     setStoredTokens(res.access_token, res.refresh_token);
     setToken(res.access_token);
     setUser(res.user);
-  };
+  }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const res = await apiFetch<TokenResponse>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
     handleTokenResponse(res);
-  };
+  }, [handleTokenResponse]);
 
-  const register = async (email: string, password: string, displayName?: string) => {
+  const register = useCallback(async (email: string, password: string, displayName?: string) => {
     const res = await apiFetch<TokenResponse>("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password, display_name: displayName }),
     });
     handleTokenResponse(res);
-  };
+  }, [handleTokenResponse]);
 
-  const signInWithApple = async (identityToken: string) => {
+  const signInWithApple = useCallback(async (identityToken: string) => {
     const res = await apiFetch<TokenResponse>("/api/auth/apple", {
       method: "POST",
       body: JSON.stringify({ identity_token: identityToken }),
     });
     handleTokenResponse(res);
-  };
+  }, [handleTokenResponse]);
 
-  const requestMagicLink = async (email: string) => {
+  const requestMagicLink = useCallback(async (email: string) => {
     return apiFetch<{ detail: string; token?: string; expires_at?: string }>("/api/auth/magic-link/request", {
       method: "POST",
       body: JSON.stringify({ email }),
     });
-  };
+  }, []);
 
-  const verifyMagicLink = async (magicToken: string) => {
+  const verifyMagicLink = useCallback(async (magicToken: string) => {
     const res = await apiFetch<TokenResponse>("/api/auth/magic-link/verify", {
       method: "POST",
       body: JSON.stringify({ token: magicToken }),
     });
     handleTokenResponse(res);
-  };
+  }, [handleTokenResponse]);
 
-  const signOut = () => {
+  const signOut = useCallback(() => {
     clearStoredTokens();
     setToken(null);
     setUser(null);
-  };
+  }, []);
 
-  const updateUserMeta = async () => ({ error: "Not yet implemented" as string | null });
-  const updateEmail = async () => ({ error: "Not yet implemented" as string | null });
-  const updatePassword = async () => ({ error: "Not yet implemented" as string | null });
+  const updateUserMeta = useCallback(async () => ({ error: "Not yet implemented" as string | null }), []);
+  const updateEmail = useCallback(async () => ({ error: "Not yet implemented" as string | null }), []);
+  const updatePassword = useCallback(async () => ({ error: "Not yet implemented" as string | null }), []);
+
+  const value = useMemo(() => ({
+    user,
+    token,
+    loading,
+    login,
+    register,
+    signInWithApple,
+    requestMagicLink,
+    verifyMagicLink,
+    signOut,
+    updateUserMeta,
+    updateEmail,
+    updatePassword,
+  }), [
+    user,
+    token,
+    loading,
+    login,
+    register,
+    signInWithApple,
+    requestMagicLink,
+    verifyMagicLink,
+    signOut,
+    updateUserMeta,
+    updateEmail,
+    updatePassword,
+  ]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        loading,
-        login,
-        register,
-        signInWithApple,
-        requestMagicLink,
-        verifyMagicLink,
-        signOut,
-        updateUserMeta,
-        updateEmail,
-        updatePassword,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

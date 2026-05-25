@@ -1,5 +1,14 @@
 const API_URL = import.meta.env.VITE_API_URL || "https://backend.asherlewis.online";
 
+const AUTH_PATHS_WITHOUT_REFRESH = new Set([
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/apple",
+  "/api/auth/magic-link/request",
+  "/api/auth/magic-link/verify",
+  "/api/auth/refresh",
+]);
+
 export interface ApiError {
   detail: string;
 }
@@ -7,7 +16,7 @@ export interface ApiError {
 let refreshPromise: Promise<string | null> | null = null;
 
 function shouldAttemptRefresh(path: string): boolean {
-  return path !== "/api/auth/login" && path !== "/api/auth/register" && path !== "/api/auth/refresh";
+  return !AUTH_PATHS_WITHOUT_REFRESH.has(path);
 }
 
 async function refreshAccessToken(): Promise<string | null> {

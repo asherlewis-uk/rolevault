@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     smtp_from_email: str = "no-reply@rolevault.app"
     smtp_from_name: str = "RoleVault"
+    magic_link_dev_tokens: bool = False
 
     class Config:
         env_file = ".env"

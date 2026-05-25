@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Sparkles, Loader2, CheckCircle, AlertCircle } from "lucide-react";
@@ -12,6 +12,16 @@ export default function MagicLinkVerify() {
   const token = searchParams.get("token");
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [error, setError] = useState<string | null>(null);
+  const verifyMagicLinkRef = useRef(verifyMagicLink);
+  const navigateRef = useRef(navigate);
+
+  useEffect(() => {
+    verifyMagicLinkRef.current = verifyMagicLink;
+  }, [verifyMagicLink]);
+
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   useEffect(() => {
     if (!token) {
@@ -21,12 +31,15 @@ export default function MagicLinkVerify() {
     }
 
     let cancelled = false;
+    let redirectTimeout: ReturnType<typeof setTimeout> | undefined;
+    setStatus("verifying");
+    setError(null);
 
-    verifyMagicLink(token)
+    verifyMagicLinkRef.current(token)
       .then(() => {
         if (!cancelled) {
           setStatus("success");
-          setTimeout(() => navigate("/", { replace: true }), 1500);
+          redirectTimeout = setTimeout(() => navigateRef.current("/", { replace: true }), 1500);
         }
       })
       .catch((err) => {
@@ -38,8 +51,11 @@ export default function MagicLinkVerify() {
 
     return () => {
       cancelled = true;
+      if (redirectTimeout) {
+        clearTimeout(redirectTimeout);
+      }
     };
-  }, [token, verifyMagicLink, navigate]);
+  }, [token]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6">
