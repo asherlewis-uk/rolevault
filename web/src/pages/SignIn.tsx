@@ -161,7 +161,16 @@ export default function SignIn() {
       await signInWithApple(idToken);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Apple Sign In failed");
+      let message = err instanceof Error ? err.message : "Apple Sign In failed";
+
+      // Translate cryptic Apple SDK errors into actionable messages
+      if (message.includes("init")) {
+        message = "Apple Sign In is not configured correctly. Check VITE_APPLE_CLIENT_ID in your environment.";
+      } else if (message.includes("popup") || message.includes("closed")) {
+        message = "Apple Sign In was cancelled. Please try again.";
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }

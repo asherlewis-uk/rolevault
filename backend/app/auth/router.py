@@ -150,16 +150,31 @@ async def apple_auth(payload: AppleAuthRequest, db: AsyncSession = Depends(get_d
     public_key = pyjwt.algorithms.RSAAlgorithm.from_jwk(key)
 
     # 4. Verify the token
-    try:
-        decoded = pyjwt.decode(
-            payload.identity_token,
-            public_key,
-            algorithms=["RS256"],
-            audience="com.rolevault.app",
-            issuer="https://appleid.apple.com",
+    # Accept either the iOS bundle ID or the web Services ID as audience
+    valid_audiences = [settings.apple_ios_client_id]
+    if settings.apple_web_client_id != settings.apple_ios_client_id:
+        valid_audiences.append(settings.apple_web_client_id)
+
+    decoded = None
+    last_error = None
+    for aud in valid_audiences:
+        try:
+            decoded = pyjwt.decode(
+                payload.identity_token,
+                public_key,
+                algorithms=["RS256"],
+                audience=aud,
+                issuer="https://appleid.apple.com",
+            )
+            break
+        except pyjwt.PyJWTError as e:
+            last_error = e
+
+    if decoded is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token verification failed: {str(last_error)}"
         )
-    except pyjwt.PyJWTError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Token verification failed: {str(e)}")
 
     apple_user_id = decoded.get("sub")
     email = decoded.get("email")

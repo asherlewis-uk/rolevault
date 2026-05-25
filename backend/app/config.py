@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     smtp_from_name: str = "RoleVault"
     magic_link_dev_tokens: bool = False
 
+    apple_ios_client_id: str = "com.rolevault.app"
+    apple_web_client_id: str = "com.rolevault.app"
+
     class Config:
         env_file = ".env"
         extra = "ignore"
