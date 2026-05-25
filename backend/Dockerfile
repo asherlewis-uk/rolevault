@@ -1,17 +1,10 @@
-# Stage 1: Builder
-FROM python:3.12-slim AS builder
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
-COPY . .
-
-# Stage 2: Runtime
 FROM python:3.12-slim
 RUN adduser --system --group appuser
 WORKDIR /app
-COPY --from=builder /root/.local /home/appuser/.local
-COPY --from=builder /app .
-ENV PATH=/home/appuser/.local/bin:$PATH
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
