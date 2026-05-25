@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, Sparkles, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import { useAuth } from "@/context/AuthContext";
-
-const inputCls = `w-full rounded-xl py-3 text-sm font-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none transition-colors duration-200`;
+import { useInputFocus } from "@/hooks/useInputFocus";
 
 export default function SignIn() {
   const [show, setShow] = useState(false);
@@ -15,6 +15,8 @@ export default function SignIn() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const emailFocus = useInputFocus();
+  const passFocus = useInputFocus();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,13 +70,9 @@ export default function SignIn() {
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 z-10" />
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com" required
-                className={`${inputCls} pl-10 pr-4`}
-                style={{
-                  background: "hsl(var(--background) / 0.55)",
-                  border: "1px solid hsl(var(--border) / 0.65)",
-                }}
-                onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.5)")}
-                onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.65)")}
+                className="w-full rounded-xl py-3 pl-10 pr-4 text-sm font-body surface-inset"
+                onFocus={emailFocus.handleFocus}
+                onBlur={emailFocus.handleBlur}
               />
             </div>
 
@@ -83,13 +81,9 @@ export default function SignIn() {
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 z-10" />
               <input type={show ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="Password" required
-                className={`${inputCls} pl-10 pr-11`}
-                style={{
-                  background: "hsl(var(--background) / 0.55)",
-                  border: "1px solid hsl(var(--border) / 0.65)",
-                }}
-                onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.5)")}
-                onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.65)")}
+                className="w-full rounded-xl py-3 pl-10 pr-11 text-sm font-body surface-inset"
+                onFocus={passFocus.handleFocus}
+                onBlur={passFocus.handleBlur}
               />
               <button type="button" onClick={() => setShow(!show)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors z-10">
@@ -102,7 +96,7 @@ export default function SignIn() {
                 <input type="checkbox" className="rounded accent-primary" />
                 Remember me
               </label>
-              <a href="#" className="text-primary hover:text-primary/80 transition-colors font-medium">Forgot password?</a>
+              <span className="text-muted-foreground/50 text-xs">Forgot password?</span>
             </div>
 
             <button type="submit" disabled={loading}
@@ -119,9 +113,9 @@ export default function SignIn() {
           </p>
           <p className="text-center text-[10px] text-muted-foreground/40 mt-4">
             By signing in you agree to our{" "}
-            <a href="#" className="underline hover:text-muted-foreground transition-colors">Terms</a>
+            <Link to="/settings/privacy" className="underline hover:text-muted-foreground transition-colors">Terms</Link>
             {" "}and{" "}
-            <a href="#" className="underline hover:text-muted-foreground transition-colors">Privacy Policy</a>.
+            <Link to="/settings/privacy" className="underline hover:text-muted-foreground transition-colors">Privacy Policy</Link>.
           </p>
         </motion.div>
       </div>
@@ -151,6 +145,10 @@ export default function SignIn() {
           </motion.div>
         </div>
       </div>
+    </div>
+  );
+}
+iv>
     </div>
   );
 }

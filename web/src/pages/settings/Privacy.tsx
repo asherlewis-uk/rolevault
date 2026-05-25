@@ -75,7 +75,7 @@ export default function Privacy() {
     <div className="min-h-screen bg-background relative">
       <div className="absolute inset-0 mesh-grid opacity-20 pointer-events-none" />
       <div className="absolute top-0 right-1/4 w-72 h-72 opacity-[0.06] blur-3xl pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(var(--spectral-cyan)) 0%, transparent 70%)" }} />
+        style={{ background: "radial-gradient(circle, hsl(var(--spectral-emerald)) 0%, transparent 70%)" }} />
 
       {/* Header */}
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3"
@@ -89,8 +89,8 @@ export default function Privacy() {
         </Link>
         <div className="flex items-center gap-2 flex-1">
           <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-            style={{ background: "hsl(var(--spectral-cyan) / 0.2)", border: "1px solid hsl(var(--spectral-cyan) / 0.4)" }}>
-            <Shield className="w-3 h-3" style={{ color: "hsl(var(--spectral-cyan))" }} />
+            style={{ background: "hsl(var(--spectral-emerald) / 0.2)", border: "1px solid hsl(var(--spectral-emerald) / 0.4)" }}>
+            <Shield className="w-3 h-3" style={{ color: "hsl(var(--spectral-emerald))" }} />
           </div>
           <span className="font-display font-bold text-sm gradient-text">Privacy & Safety</span>
         </div>
@@ -101,17 +101,17 @@ export default function Privacy() {
 
         {/* Safety score */}
         <motion.div variants={itemVariants} className="panel rounded-2xl p-4"
-          style={{ background: "hsl(var(--spectral-green) / 0.06)", borderColor: "hsl(var(--spectral-green) / 0.3)" }}>
+          style={{ background: "hsl(var(--spectral-emerald) / 0.06)", borderColor: "hsl(var(--spectral-emerald) / 0.3)" }}>
           <div className="flex items-center gap-3">
             <div className="relative w-12 h-12 flex-shrink-0">
               <svg viewBox="0 0 36 36" className="w-12 h-12 -rotate-90">
                 <circle cx="18" cy="18" r="15.9" fill="none" stroke="hsl(var(--border)/0.3)" strokeWidth="2.5" />
                 <circle cx="18" cy="18" r="15.9" fill="none"
-                  stroke="hsl(var(--spectral-green))" strokeWidth="2.5"
+                  stroke="hsl(var(--spectral-emerald))" strokeWidth="2.5"
                   strokeDasharray="80 100" strokeLinecap="round" />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <CheckCircle className="w-4 h-4" style={{ color: "hsl(var(--spectral-green))" }} />
+                <CheckCircle className="w-4 h-4" style={{ color: "hsl(var(--spectral-emerald))" }} />
               </div>
             </div>
             <div>
@@ -138,8 +138,8 @@ export default function Privacy() {
             </div>
             <div className="flex items-center gap-3 px-4 py-3.5">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "hsl(var(--spectral-cyan) / 0.1)", border: "1px solid hsl(var(--spectral-cyan) / 0.2)" }}>
-                <EyeOff className="w-3.5 h-3.5" style={{ color: "hsl(var(--spectral-cyan))" }} />
+                style={{ background: "hsl(var(--spectral-emerald) / 0.1)", border: "1px solid hsl(var(--spectral-emerald) / 0.2)" }}>
+                <EyeOff className="w-3.5 h-3.5" style={{ color: "hsl(var(--spectral-emerald))" }} />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">Activity Status</p>
@@ -180,8 +180,8 @@ export default function Privacy() {
             </div>
             <div className="flex items-center gap-3 px-4 py-3.5">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "hsl(var(--spectral-pink) / 0.1)", border: "1px solid hsl(var(--spectral-pink) / 0.2)" }}>
-                <Lock className="w-3.5 h-3.5" style={{ color: "hsl(var(--spectral-pink))" }} />
+                style={{ background: "hsl(var(--spectral-rose) / 0.1)", border: "1px solid hsl(var(--spectral-rose) / 0.2)" }}>
+                <Lock className="w-3.5 h-3.5" style={{ color: "hsl(var(--spectral-rose))" }} />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">Explicit Content</p>

@@ -84,7 +84,7 @@ export function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.07 }}
-              className="break-inside-avoid glass rounded-2xl p-5 border border-border/50 card-lift"
+              className="break-inside-avoid panel rounded-2xl p-5 border border-border/50 card-lift"
             >
               <Quote className="w-5 h-5 text-primary/50 mb-3" />
               <p className="text-foreground/85 text-sm leading-relaxed mb-4">{t.text}</p>

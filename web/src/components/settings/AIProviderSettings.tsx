@@ -45,11 +45,11 @@ function ProviderPill({
       </div>
       {meta.isLocal && (
         <span
-          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
           style={{
-            background: "hsl(var(--spectral-green) / 0.12)",
-            color: "hsl(var(--spectral-green))",
-            border: "1px solid hsl(var(--spectral-green) / 0.25)",
+            background: "hsl(var(--spectral-emerald) / 0.12)",
+            color: "hsl(var(--spectral-emerald))",
+            border: "1px solid hsl(var(--spectral-emerald) / 0.25)",
           }}
         >
           LOCAL
@@ -337,13 +337,13 @@ export function AIProviderSettings() {
             </button>
 
             {connectionStatus === "ok" && (
-              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "hsl(var(--spectral-green))" }}>
+              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "hsl(var(--spectral-emerald))" }}>
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Connected
               </div>
             )}
             {connectionStatus === "error" && (
-              <div className="flex items-center gap-1.5 text-xs" style={{ color: "hsl(var(--spectral-orange))" }}>
+              <div className="flex items-center gap-1.5 text-xs" style={{ color: "hsl(var(--spectral-amber))" }}>
                 <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="truncate max-w-[160px]" title={connectionError}>{connectionError}</span>
               </div>

@@ -6,18 +6,12 @@ import {
   Sparkles, Wand2, Shield, Globe, Lock, ArrowLeft, Check
 } from "lucide-react";
 import charLyra from "@/assets/char-lyra.jpg";
+import { useInputFocus } from "@/hooks/useInputFocus";
 
 const STEPS = ["Identity", "Personality", "Scenario", "Settings", "Preview"];
 
-const inputCls = `w-full rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 font-body text-sm focus:outline-none transition-colors duration-200`;
-const inputStyle = {
-  background: "hsl(var(--background) / 0.5)",
-  border: "1px solid hsl(var(--border) / 0.7)",
-};
-const inputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-  (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.5)");
-const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-  (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.7)");
+export default function CreateCharacter() {
+  const inputF = useInputFocus({ borderFocus: "hsl(var(--primary) / 0.5)", borderBlur: "hsl(var(--border) / 0.7)" });
 
 export default function CreateCharacter() {
   const navigate = useNavigate();
@@ -50,7 +44,7 @@ export default function CreateCharacter() {
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = form.avatar ? "hsl(var(--primary) / 0.4)" : "hsl(var(--border) / 0.6)"}
           >
             {form.avatar ? (
-              <img src={form.avatar} alt="" className="w-full h-full object-cover" />
+              <img src={form.avatar} alt={form.name || "Character avatar"} className="w-full h-full object-cover" />
             ) : (
               <Upload className="w-5 h-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
             )}
@@ -203,7 +197,7 @@ export default function CreateCharacter() {
           </div>
         </div>
         <div className="panel rounded-xl p-4 flex items-start gap-3" style={{ borderColor: "hsl(var(--secondary) / 0.15)" }}>
-          <div className="w-8 h-8 rounded-lg icon-box-cyan flex items-center justify-center flex-shrink-0 mt-0.5">
+          <div className="w-8 h-8 rounded-lg icon-box-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
             <Shield className="w-4 h-4" />
           </div>
           <div>
@@ -228,7 +222,7 @@ export default function CreateCharacter() {
             <div className="rounded-xl overflow-hidden panel">
               <div className="relative" style={{ aspectRatio: "3/4" }}>
                 {form.avatar ? (
-                  <img src={form.avatar} alt="" className="w-full h-full object-cover" />
+                  <img src={form.avatar} alt={form.name || "Character avatar"} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center"
                     style={{ background: "var(--gradient-hero)" }}>
@@ -249,7 +243,7 @@ export default function CreateCharacter() {
             <p className="section-label mb-3">Greeting Preview</p>
             <div className="panel rounded-xl p-4 space-y-3">
               {form.avatar && (
-                <img src={form.avatar} alt="" className="w-9 h-9 rounded-full object-cover"
+                <img src={form.avatar} alt="Character preview" className="w-9 h-9 rounded-full object-cover"
                   style={{ boxShadow: "0 0 0 1.5px hsl(var(--secondary) / 0.3)" }} />
               )}
               <div className="bubble-ai rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-foreground leading-relaxed">
@@ -317,7 +311,7 @@ export default function CreateCharacter() {
                 >
                   {i < step ? <Check className="w-3.5 h-3.5" /> : i + 1}
                 </button>
-                <span className="text-[9px] font-medium"
+                <span className="text-[10px] font-medium"
                   style={{ color: i === step ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.6)" }}>
                   {s}
                 </span>

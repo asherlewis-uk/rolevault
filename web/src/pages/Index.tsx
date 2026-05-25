@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,6 +10,7 @@ import {
 import { characters } from "@/data/characters";
 import { useAuth } from "@/context/AuthContext";
 import { useRecentChats } from "@/hooks/useRecentChats";
+import { useInputFocus } from "@/hooks/useInputFocus";
 import { useFavourites } from "@/hooks/useFavourites";
 
 const featuredChars = characters.filter((c) => c.featured);
@@ -31,6 +32,7 @@ export default function Index() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [charIdx, setCharIdx]       = useState(0);
   const [input, setInput]           = useState("");
+  const inputFocus = useInputFocus();
 
   const currentChar = featuredChars[charIdx % featuredChars.length] ?? characters[0];
 
@@ -48,6 +50,13 @@ export default function Index() {
 
   const close = () => setDrawerOpen(false);
 
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawerOpen]);
+
   return (
     <div
       className="bg-background flex flex-col overflow-hidden relative"
@@ -56,7 +65,7 @@ export default function Index() {
       {/* Ambient glows */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-radial-violet opacity-[0.07] blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-radial-cyan opacity-[0.05] blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-radial-crimson opacity-[0.05] blur-3xl" />
         <div className="absolute inset-0 mesh-grid opacity-[0.04]" />
       </div>
 
@@ -81,7 +90,7 @@ export default function Index() {
               key="drawer"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
+              exit={{ x: "-100%", transition: { type: "spring", damping: 38, stiffness: 380, mass: 0.7, duration: 0.22 } }}
               transition={{ type: "spring", damping: 30, stiffness: 280, mass: 0.9 }}
               className="fixed left-0 top-0 bottom-0 z-50 w-[72vw] max-w-[300px] flex flex-col"
               style={{
@@ -259,7 +268,7 @@ export default function Index() {
                               className="w-full h-full object-cover"
                             />
                           </div>
-                          <span className="text-[9px] text-muted-foreground/55 font-display max-w-[48px] truncate text-center leading-tight">
+                          <span className="text-[10px] text-muted-foreground/55 font-display max-w-[48px] truncate text-center leading-tight">
                             {char.name}
                           </span>
                         </Link>
@@ -413,8 +422,8 @@ export default function Index() {
                 background: "hsl(var(--background) / 0.5)",
                 border: "1px solid hsl(var(--border) / 0.6)",
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.42)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.6)")}
+              onFocus={inputFocus.handleFocus}
+              onBlur={inputFocus.handleBlur}
             />
           </div>
 

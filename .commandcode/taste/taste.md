@@ -6,6 +6,9 @@
 # communication
 - Optimize output for correctness, verification, surgical precision, and production readiness — not for sounding intelligent. Avoid generic commentary, theoretical best-practices without evidence, aspirational architecture essays, and hallucinated file structures. Confidence: 0.80
 
+# design-system
+- Do not override Tailwind's native font size scale (text-xs, text-sm, etc.) in projects that use shadcn/ui — shadcn components depend on the default sizes and will silently break. Add new semantic tokens (text-micro) or use CSS custom properties for type scale instead. Confidence: 0.70
+
 # reconstruction-workflow
 - All reconstruction patches must follow the mandatory 10-section output format: Problem, Root Cause, Severity, Systems Impacted, Implementation Strategy, Swift Patch, Migration Notes, Regression Risks, Validation Procedure, Cross-Agent Review Notes. Confidence: 0.80
 - Execute reconstruction in strict wave order: Wave 0 (Launch Blockers) → Wave 1 (Stability) → Wave 2 (Performance/Reliability) → Wave 3 (UX/Polish) → Wave 4 (Deferred). No downstream implementation before upstream waves stabilize. Confidence: 0.80

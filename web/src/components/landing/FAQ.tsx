@@ -58,8 +58,8 @@ export function FAQ() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.3, delay: i * 0.05 }}
-              className={`glass rounded-2xl border transition-all duration-300 overflow-hidden ${
-                open === i ? "border-primary/40 shadow-glow-violet/20" : "border-border/50"
+              className={`panel rounded-2xl border transition-all duration-300 overflow-hidden ${
+                open === i ? "border-primary/40 shadow-glow-primary" : "border-border/50"
               }`}
             >
               <button

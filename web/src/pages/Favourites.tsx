@@ -17,7 +17,7 @@ export default function Favourites() {
       {/* Ambient glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/4 left-1/3 w-96 h-96 opacity-[0.06] blur-3xl bg-radial-violet" />
-        <div className="absolute bottom-1/3 right-1/4 w-64 h-64 opacity-[0.04] blur-3xl bg-radial-cyan" />
+        <div className="absolute bottom-1/3 right-1/4 w-64 h-64 opacity-[0.04] blur-3xl bg-radial-crimson" />
         <div className="absolute inset-0 mesh-grid opacity-[0.03]" />
       </div>
 
@@ -43,13 +43,13 @@ export default function Favourites() {
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center"
             style={{
-              background: "hsl(var(--spectral-pink) / 0.15)",
-              border: "1px solid hsl(var(--spectral-pink) / 0.3)",
+              background: "hsl(var(--spectral-rose) / 0.15)",
+              border: "1px solid hsl(var(--spectral-rose) / 0.3)",
             }}
           >
             <Heart
               className="w-3.5 h-3.5 fill-current"
-              style={{ color: "hsl(var(--spectral-pink))" }}
+              style={{ color: "hsl(var(--spectral-rose))" }}
             />
           </div>
           <h1 className="font-display font-bold text-foreground text-base">Favourites</h1>
@@ -57,9 +57,9 @@ export default function Favourites() {
             <span
               className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
               style={{
-                background: "hsl(var(--spectral-pink) / 0.12)",
-                color: "hsl(var(--spectral-pink))",
-                border: "1px solid hsl(var(--spectral-pink) / 0.25)",
+                background: "hsl(var(--spectral-rose) / 0.12)",
+                color: "hsl(var(--spectral-rose))",
+                border: "1px solid hsl(var(--spectral-rose) / 0.25)",
               }}
             >
               {favouriteChars.length}
@@ -80,13 +80,13 @@ export default function Favourites() {
             <div
               className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
               style={{
-                background: "hsl(var(--spectral-pink) / 0.08)",
-                border: "1.5px solid hsl(var(--spectral-pink) / 0.2)",
+                background: "hsl(var(--spectral-rose) / 0.08)",
+                border: "1.5px solid hsl(var(--spectral-rose) / 0.2)",
               }}
             >
               <Heart
                 className="w-8 h-8"
-                style={{ color: "hsl(var(--spectral-pink) / 0.5)" }}
+                style={{ color: "hsl(var(--spectral-rose) / 0.5)" }}
               />
             </div>
             <h2 className="font-display font-bold text-foreground text-xl mb-2">No favourites yet</h2>

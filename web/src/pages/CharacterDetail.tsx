@@ -17,11 +17,11 @@ function formatCount(n: number): string {
 
 // Category → spectral accent color (CSS var hsl values)
 const categorySpectral: Record<string, { hsl: string; label: string }> = {
-  Companions:  { hsl: "var(--spectral-violet)", label: "Companion" },
-  Roleplay:    { hsl: "var(--spectral-cyan)",   label: "Roleplay"  },
-  Educational: { hsl: "var(--spectral-amber)",  label: "Education" },
-  Fantasy:     { hsl: "var(--spectral-pink)",   label: "Fantasy"   },
-  Wellness:    { hsl: "var(--spectral-green)",  label: "Wellness"  },
+  Companions:  { hsl: "var(--spectral-gold)",    label: "Companion" },
+  Roleplay:    { hsl: "var(--spectral-amber)",   label: "Roleplay"  },
+  Educational: { hsl: "var(--spectral-emerald)", label: "Education" },
+  Fantasy:     { hsl: "var(--spectral-rose)",    label: "Fantasy"   },
+  Wellness:    { hsl: "var(--spectral-gold)",    label: "Wellness"  },
 };
 
 const tabs = ["About", "Dialogue", "Details"] as const;
@@ -161,8 +161,8 @@ export default function CharacterDetail() {
         >
           {[
             { icon: MessageCircle, label: "Chats", value: formatCount(character.chats), color: accent.hsl },
-            { icon: Heart, label: "Likes", value: formatCount(character.likes), color: "var(--spectral-pink)" },
-            { icon: Users, label: "Creator", value: character.creator.split(" ")[0], color: "var(--spectral-cyan)" },
+            { icon: Heart, label: "Likes", value: formatCount(character.likes), color: "var(--spectral-rose)" },
+            { icon: Users, label: "Creator", value: character.creator.split(" ")[0], color: "var(--spectral-gold)" },
           ].map(({ icon: Icon, label, value, color }) => (
             <div key={label}
               className="rounded-xl p-3 text-center"
@@ -207,10 +207,10 @@ export default function CharacterDetail() {
             onClick={() => toggleFavourite(character.id)}
             className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-250"
             style={{
-              background: liked ? "hsl(var(--spectral-pink) / 0.14)" : "hsl(var(--card) / 0.5)",
-              border: `1px solid hsl(${liked ? "var(--spectral-pink)" : "var(--border)"} / 0.4)`,
-              color: liked ? "hsl(var(--spectral-pink))" : "hsl(var(--muted-foreground))",
-              boxShadow: liked ? "0 0 14px hsl(var(--spectral-pink) / 0.2)" : "none",
+              background: liked ? "hsl(var(--spectral-rose) / 0.14)" : "hsl(var(--card) / 0.5)",
+              border: `1px solid hsl(${liked ? "var(--spectral-rose)" : "var(--border)"} / 0.4)`,
+              color: liked ? "hsl(var(--spectral-rose))" : "hsl(var(--muted-foreground))",
+              boxShadow: liked ? "0 0 14px hsl(var(--spectral-rose) / 0.2)" : "none",
             }}>
             <Heart className={`w-4 h-4 ${liked ? "fill-current" : ""}`} />
             {liked ? "Liked" : "Like"}
@@ -322,7 +322,7 @@ export default function CharacterDetail() {
 
               {/* Greeting */}
               <div className="flex gap-2.5">
-                <img src={character.avatar} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5"
+                <img src={character.avatar} alt={character.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5"
                   style={{ boxShadow: `0 0 0 2px hsl(${accent.hsl} / 0.4)` }} />
                 <div className="bubble-ai rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-foreground max-w-[80%] leading-relaxed"
                   style={{ borderColor: `hsl(${accent.hsl} / 0.15)` }}>
@@ -333,7 +333,7 @@ export default function CharacterDetail() {
               {character.sampleDialogue.map((msg, i) => (
                 <div key={i} className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                   {msg.role === "ai" && (
-                    <img src={character.avatar} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5"
+                    <img src={character.avatar} alt={character.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5"
                       style={{ boxShadow: `0 0 0 2px hsl(${accent.hsl} / 0.4)` }} />
                   )}
                   <div className={`rounded-2xl px-4 py-3 text-sm max-w-[80%] leading-relaxed ${
@@ -369,17 +369,17 @@ export default function CharacterDetail() {
               {/* Personality */}
               <div className="panel rounded-2xl p-4">
                 <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">Personality</p>
-                <p className="text-sm text-foreground/80 leading-relaxed">{character.personality}</p>
+                <p className="text-sm text-foreground/80 leading-relaxed prose-measure">{character.personality}</p>
               </div>
 
               {/* Stats detail */}
               <div className="panel rounded-2xl overflow-hidden" style={{ padding: 0 }}>
                 {[
                   { icon: MessageCircle, label: "Total Conversations", value: formatCount(character.chats), color: accent.hsl },
-                  { icon: Heart, label: "Total Likes", value: formatCount(character.likes), color: "var(--spectral-pink)" },
-                  { icon: Star, label: "Content Rating", value: character.rating, color: "var(--spectral-amber)" },
-                  { icon: Tag, label: "Category", value: character.category, color: "var(--spectral-cyan)" },
-                  { icon: Users, label: "Created by", value: character.creator, color: "var(--spectral-green)" },
+                  { icon: Heart, label: "Total Likes", value: formatCount(character.likes), color: "var(--spectral-rose)" },
+                  { icon: Star, label: "Content Rating", value: character.rating, color: "var(--spectral-gold)" },
+                  { icon: Tag, label: "Category", value: character.category, color: "var(--spectral-amber)" },
+                  { icon: Users, label: "Created by", value: character.creator, color: "var(--spectral-emerald)" },
                 ].map(({ icon: Icon, label, value, color }, i) => (
                   <div key={label}
                     className="flex items-center gap-3 px-4 py-3.5"
@@ -393,10 +393,10 @@ export default function CharacterDetail() {
 
               {/* Safety */}
               <div className="panel rounded-2xl p-4 flex items-start gap-3"
-                style={{ borderColor: "hsl(var(--spectral-green) / 0.25)", background: "hsl(var(--spectral-green) / 0.04)" }}>
+                style={{ borderColor: "hsl(var(--spectral-emerald) / 0.25)", background: "hsl(var(--spectral-emerald) / 0.04)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                  style={{ background: "hsl(var(--spectral-green) / 0.12)", border: "1px solid hsl(var(--spectral-green) / 0.3)" }}>
-                  <Shield className="w-3.5 h-3.5" style={{ color: "hsl(var(--spectral-green))" }} />
+                  style={{ background: "hsl(var(--spectral-emerald) / 0.12)", border: "1px solid hsl(var(--spectral-emerald) / 0.3)" }}>
+                  <Shield className="w-3.5 h-3.5" style={{ color: "hsl(var(--spectral-emerald))" }} />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground mb-1">Safety & Content</p>

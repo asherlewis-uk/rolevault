@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, Sparkles, ArrowRight, Check, AlertCircle, Loader2 } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import { useAuth } from "@/context/AuthContext";
+import { useInputFocus } from "@/hooks/useInputFocus";
 
 const perks = [
   "Chat with thousands of unique AI characters",
@@ -12,13 +13,18 @@ const perks = [
   "Your conversations are private and encrypted",
 ];
 
-const inputCls = `w-full rounded-xl py-3 text-sm font-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none transition-colors duration-200`;
-const inputBaseStyle = {
-  background: "hsl(var(--background) / 0.55)",
-  border: "1px solid hsl(var(--border) / 0.65)",
-};
-
 export default function SignUp() {
+  const [show, setShow] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
+  const nameFocus = useInputFocus();
+  const emailFocus = useInputFocus();
+  const passFocus = useInputFocus();
   const [show, setShow] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -81,7 +87,7 @@ export default function SignUp() {
 
       {/* Left — Visual panel (desktop only) */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden">
-        <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={heroBg} alt="" role="presentation" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to right, transparent 20%, hsl(var(--background) / 0.5) 100%)" }} />
         <div className="relative z-10 flex flex-col justify-center p-16 w-full">
           <motion.div
@@ -121,7 +127,7 @@ export default function SignUp() {
       {/* Right — Form */}
       <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 relative">
         <div className="absolute inset-0 bg-background mesh-grid opacity-40" />
-        <div className="absolute bottom-1/3 right-1/4 w-72 h-72 bg-radial-cyan opacity-15 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/3 right-1/4 w-72 h-72 bg-radial-crimson opacity-15 blur-3xl pointer-events-none" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -152,18 +158,18 @@ export default function SignUp() {
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 z-10" />
               <input type="text" value={name} onChange={e => setName(e.target.value)}
                 placeholder="Display name" required
-                className={`${inputCls} pl-10 pr-4`} style={{ ...inputBaseStyle }}
-                onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.5)")}
-                onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.65)")} />
+                className="w-full rounded-xl py-3 pl-10 pr-4 text-sm font-body surface-inset"
+                onFocus={nameFocus.handleFocus}
+                onBlur={nameFocus.handleBlur} />
             </div>
 
             <div className="relative glow-focus rounded-xl">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 z-10" />
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com" required
-                className={`${inputCls} pl-10 pr-4`} style={{ ...inputBaseStyle }}
-                onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.5)")}
-                onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.65)")} />
+                className="w-full rounded-xl py-3 pl-10 pr-4 text-sm font-body surface-inset"
+                onFocus={emailFocus.handleFocus}
+                onBlur={emailFocus.handleBlur} />
             </div>
 
             <div className="space-y-2">
@@ -171,9 +177,9 @@ export default function SignUp() {
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 z-10" />
                 <input type={show ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="Create password" required
-                  className={`${inputCls} pl-10 pr-11`} style={{ ...inputBaseStyle }}
-                  onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.5)")}
-                  onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.65)")} />
+                  className="w-full rounded-xl py-3 pl-10 pr-11 text-sm font-body surface-inset"
+                  onFocus={passFocus.handleFocus}
+                  onBlur={passFocus.handleBlur} />
                 <button type="button" onClick={() => setShow(!show)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors z-10">
                   {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -206,9 +212,9 @@ export default function SignUp() {
           </p>
           <p className="text-center text-[10px] text-muted-foreground/40 mt-4">
             By signing up you agree to our{" "}
-            <a href="#" className="underline hover:text-muted-foreground transition-colors">Terms</a>
+            <Link to="/settings/privacy" className="underline hover:text-muted-foreground transition-colors">Terms</Link>
             {" "}and{" "}
-            <a href="#" className="underline hover:text-muted-foreground transition-colors">Privacy Policy</a>.
+            <Link to="/settings/privacy" className="underline hover:text-muted-foreground transition-colors">Privacy Policy</Link>.
           </p>
         </motion.div>
       </div>

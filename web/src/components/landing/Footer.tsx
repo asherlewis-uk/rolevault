@@ -6,17 +6,11 @@ const footerLinks = {
   Product: [
     { label: "Discover Characters", to: "/discover" },
     { label: "Create a Character", to: "/create" },
-    { label: "Pricing", to: "/profile" },
   ],
-  Company: [
-    { label: "About Us", to: "#" },
-    { label: "Blog", to: "#" },
-    { label: "Careers", to: "#" },
-  ],
-  Legal: [
-    { label: "Terms of Service", to: "#" },
-    { label: "Privacy Policy", to: "#" },
-    { label: "Community Guidelines", to: "#" },
+  Support: [
+    { label: "Privacy Policy", to: "/settings/privacy" },
+    { label: "Terms of Service", to: "/settings/privacy" },
+    { label: "Community Guidelines", to: "/settings/privacy" },
   ],
 };
 
@@ -31,7 +25,7 @@ export function Footer() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="glass rounded-3xl p-8 sm:p-12 border border-primary/20 text-center mb-20 relative overflow-hidden inner-glow-violet"
+          className="panel rounded-3xl p-8 sm:p-12 border border-primary/20 text-center mb-20 relative overflow-hidden inner-glow-primary"
         >
           <div className="absolute inset-0 bg-radial-violet opacity-20 pointer-events-none" />
           <div className="relative z-10">
@@ -52,7 +46,7 @@ export function Footer() {
         </motion.div>
 
         {/* Links */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 sm:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">

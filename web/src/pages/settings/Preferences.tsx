@@ -40,7 +40,7 @@ const languages = [
 ];
 
 const aiModels = [
-  { id: "flash", name: "Flash", desc: "Fastest responses, ideal for quick chats", accent: "--spectral-cyan", badge: "Default" },
+  { id: "flash", name: "Flash", desc: "Fastest responses, ideal for quick chats", accent: "--spectral-amber", badge: "Default" },
   { id: "pro", name: "Pro", desc: "Deeper personality, longer memory context", accent: "--spectral-violet", badge: "Voyager+" },
   { id: "ultra", name: "Ultra", desc: "Most immersive, nuanced, emotionally rich", accent: "--primary", badge: "Luminary" },
 ];

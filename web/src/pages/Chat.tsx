@@ -13,6 +13,7 @@ import { AppNavLink } from "@/components/AppNavLink";
 import { useRecentChats } from "@/hooks/useRecentChats";
 import { useFavourites } from "@/hooks/useFavourites";
 import { useLLMProvider } from "@/hooks/useLLMProvider";
+import { useInputFocus } from "@/hooks/useInputFocus";
 import { streamChat } from "@/lib/chatStream";
 import { toast } from "@/components/ui/use-toast";
 
@@ -50,6 +51,8 @@ export default function Chat() {
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const searchFocus = useInputFocus({ borderFocus: "hsl(var(--primary) / 0.4)", borderBlur: "hsl(var(--border) / 0.6)" });
+  const chatFocus = useInputFocus();
   const liked = isFavourite(character.id);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -173,13 +176,9 @@ export default function Chat() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
             <input
               placeholder="Search chats…"
-              className="w-full rounded-lg pl-7 pr-3 py-1.5 text-xs font-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none transition-colors"
-              style={{
-                background: "hsl(var(--background) / 0.5)",
-                border: "1px solid hsl(var(--border) / 0.6)",
-              }}
-              onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.4)")}
-              onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.6)")}
+              className="w-full rounded-lg pl-7 pr-3 py-1.5 text-xs font-body surface-inset"
+              onFocus={searchFocus.handleFocus}
+              onBlur={searchFocus.handleBlur}
             />
           </div>
         </div>
@@ -271,14 +270,18 @@ export default function Chat() {
               onClick={() => toggleFavourite(character.id)}
               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200`}
               style={liked ? {
-                color: "hsl(var(--spectral-pink))",
-                background: "hsl(var(--spectral-pink) / 0.1)",
-                border: "1px solid hsl(var(--spectral-pink) / 0.25)",
+                color: "hsl(var(--spectral-rose))",
+                background: "hsl(var(--spectral-rose) / 0.1)",
+                border: "1px solid hsl(var(--spectral-rose) / 0.25)",
               } : {}}
             >
               <Heart className={`w-3.5 h-3.5 ${liked ? "fill-current" : "text-muted-foreground"}`} />
             </button>
-            <button className="w-8 h-8 glass rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              onClick={() => toast({ title: "More options", description: "Character settings and chat tools coming soon." })}
+              className="w-8 h-8 glass rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="More options"
+            >
               <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -291,7 +294,7 @@ export default function Chat() {
           {/* Ambient backdrop for immersion */}
           <div className="fixed inset-0 pointer-events-none">
             <div className="absolute top-1/4 left-1/3 w-72 h-72 opacity-[0.06] blur-3xl bg-radial-violet" />
-            <div className="absolute bottom-1/3 right-1/4 w-64 h-64 opacity-[0.04] blur-3xl bg-radial-cyan" />
+            <div className="absolute bottom-1/3 right-1/4 w-64 h-64 opacity-[0.04] blur-3xl bg-radial-crimson" />
           </div>
 
           <div className="max-w-2xl mx-auto space-y-5 relative z-10">
@@ -322,9 +325,9 @@ export default function Chat() {
               {messages.map((msg, idx) => (
                 <motion.div
                   key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
+                  initial={{ opacity: 0, scale: 0.97, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.22, delay: Math.min(idx * 0.03, 0.18), ease: [0.34, 1.56, 0.64, 1] }}
                   className={`flex gap-2.5 group ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                 >
                   {msg.role === "ai" && (
@@ -346,7 +349,7 @@ export default function Chat() {
                     >
                       {msg.text}
                     </div>
-                    <div className={`flex items-center gap-2 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+                    <div className={`flex items-center gap-2 px-1 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 ${
                       msg.role === "user" ? "flex-row-reverse" : ""
                     }`}>
                       <span className="text-[10px] text-muted-foreground/40">
@@ -354,18 +357,18 @@ export default function Chat() {
                       </span>
                       {msg.role === "ai" && (
                         <div className="flex items-center gap-1">
-                          <button className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground transition-colors">
-                            <ThumbsUp className="w-3 h-3" />
+                          <button className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground transition-colors touch-target" aria-label="Like message">
+                            <ThumbsUp className="w-3.5 h-3.5" />
                           </button>
-                          <button className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground transition-colors">
-                            <ThumbsDown className="w-3 h-3" />
+                          <button className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground transition-colors touch-target" aria-label="Dislike message">
+                            <ThumbsDown className="w-3.5 h-3.5" />
                           </button>
-                          <button className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground transition-colors">
-                            <Copy className="w-3 h-3" />
+                          <button className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground/50 hover:text-foreground transition-colors touch-target" aria-label="Copy message">
+                            <Copy className="w-3.5 h-3.5" />
                           </button>
                           {idx === messages.length - 1 && (
-                            <button className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/50 hover:text-primary transition-colors">
-                              <RefreshCw className="w-3 h-3" />
+                            <button className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground/50 hover:text-primary transition-colors touch-target" aria-label="Regenerate response">
+                              <RefreshCw className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -445,8 +448,8 @@ export default function Chat() {
                   overflowY: "auto",
                   lineHeight: "1.4",
                 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.42)")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.6)")}
+                onFocus={chatFocus.handleFocus}
+                onBlur={chatFocus.handleBlur}
                 onInput={(e) => {
                   const t = e.currentTarget;
                   t.style.height = "auto";

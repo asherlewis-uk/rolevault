@@ -1,14 +1,8 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { characters } from "@/data/characters";
 import { CharacterCard } from "@/components/CharacterCard";
-
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return String(n);
-}
 
 const featured = characters.filter((c) => c.featured);
 
@@ -27,10 +21,7 @@ export function FeaturedCharacters() {
           className="flex items-end justify-between mb-10"
         >
           <div>
-            <div className="inline-flex items-center gap-2 glass border border-primary/30 rounded-full px-3 py-1.5 mb-4">
-              <Sparkles className="w-3 h-3 text-primary" />
-              <span className="text-xs text-muted-foreground font-medium">Trending Now</span>
-            </div>
+            <p className="text-xs text-muted-foreground/60 uppercase tracking-widest font-semibold mb-3 font-display">Trending Now</p>
             <h2 className="font-display text-4xl font-bold text-foreground">
               Featured <span className="gradient-text">Characters</span>
             </h2>

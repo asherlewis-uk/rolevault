@@ -26,13 +26,13 @@ function getCategorySpectral(category: string): {
   borderColor: string;
 } {
   const cat = category.toLowerCase();
-  if (cat === "companions")  return { edgeColor: "hsl(var(--spectral-violet))", glowColor: "hsl(var(--spectral-violet) / 0.18)", borderColor: "hsl(var(--spectral-violet) / 0.3)" };
-  if (cat === "educational") return { edgeColor: "hsl(var(--spectral-cyan))",   glowColor: "hsl(var(--spectral-cyan) / 0.18)",   borderColor: "hsl(var(--spectral-cyan) / 0.3)" };
-  if (cat === "roleplay")    return { edgeColor: "hsl(var(--spectral-orange))", glowColor: "hsl(var(--spectral-orange) / 0.15)", borderColor: "hsl(var(--spectral-orange) / 0.28)" };
-  if (cat === "fantasy")     return { edgeColor: "hsl(var(--spectral-pink))",   glowColor: "hsl(var(--spectral-pink) / 0.16)",   borderColor: "hsl(var(--spectral-pink) / 0.28)" };
-  if (cat === "wellness")    return { edgeColor: "hsl(var(--spectral-green))",  glowColor: "hsl(var(--spectral-green) / 0.16)",  borderColor: "hsl(var(--spectral-green) / 0.28)" };
-  // default: violet
-  return { edgeColor: "hsl(var(--spectral-violet))", glowColor: "hsl(var(--spectral-violet) / 0.18)", borderColor: "hsl(var(--spectral-violet) / 0.3)" };
+  if (cat === "companions")  return { edgeColor: "hsl(var(--spectral-gold))",    glowColor: "hsl(var(--spectral-gold) / 0.18)",    borderColor: "hsl(var(--spectral-gold) / 0.3)" };
+  if (cat === "educational") return { edgeColor: "hsl(var(--spectral-emerald))", glowColor: "hsl(var(--spectral-emerald) / 0.18)", borderColor: "hsl(var(--spectral-emerald) / 0.3)" };
+  if (cat === "roleplay")    return { edgeColor: "hsl(var(--spectral-amber))",   glowColor: "hsl(var(--spectral-amber) / 0.15)",   borderColor: "hsl(var(--spectral-amber) / 0.28)" };
+  if (cat === "fantasy")     return { edgeColor: "hsl(var(--spectral-rose))",    glowColor: "hsl(var(--spectral-rose) / 0.16)",    borderColor: "hsl(var(--spectral-rose) / 0.28)" };
+  if (cat === "wellness")    return { edgeColor: "hsl(var(--spectral-gold))",    glowColor: "hsl(var(--spectral-gold) / 0.16)",    borderColor: "hsl(var(--spectral-gold) / 0.28)" };
+  // default: gold
+  return { edgeColor: "hsl(var(--spectral-gold))", glowColor: "hsl(var(--spectral-gold) / 0.18)", borderColor: "hsl(var(--spectral-gold) / 0.3)" };
 }
 
 export function CharacterCard({
@@ -53,7 +53,7 @@ export function CharacterCard({
     >
       <Link to={`/character/${character.id}`}>
         <div
-          className={cn("group relative overflow-hidden rounded-xl cursor-pointer card-lift", className)}
+          className={cn("group relative overflow-hidden rounded-xl cursor-pointer card-lift active:scale-[0.98] active:shadow-card", className)}
           style={{
             background: "hsl(var(--card) / 0.65)",
             border: `1px solid hsl(var(--border) / 0.4)`,
@@ -126,14 +126,14 @@ export function CharacterCard({
                 className="absolute bottom-2.5 right-2.5 w-7 h-7 rounded-full flex items-center justify-center z-20 transition-all duration-200"
                 style={{
                   background: isFavourited
-                    ? "hsl(var(--spectral-pink) / 0.85)"
+                    ? "hsl(var(--spectral-rose) / 0.85)"
                     : "hsl(var(--card) / 0.75)",
                   border: isFavourited
-                    ? "1.5px solid hsl(var(--spectral-pink) / 0.6)"
+                    ? "1.5px solid hsl(var(--spectral-rose) / 0.6)"
                     : "1.5px solid hsl(var(--border) / 0.5)",
                   backdropFilter: "blur(8px)",
                   boxShadow: isFavourited
-                    ? "0 0 10px hsl(var(--spectral-pink) / 0.35)"
+                    ? "0 0 10px hsl(var(--spectral-rose) / 0.35)"
                     : "none",
                 }}
               >
@@ -175,11 +175,11 @@ export function CharacterCard({
             {/* Stats */}
             <div className="flex items-center justify-between"
               style={{ paddingTop: "0.5rem", borderTop: "1px solid hsl(var(--border) / 0.4)" }}>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground/60">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground/60 tabular-nums">
                 <MessageCircle className="w-3 h-3" />
                 <span>{formatCount(character.chats)}</span>
               </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground/60">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground/60 tabular-nums">
                 <Heart className="w-3 h-3" />
                 <span>{formatCount(character.likes)}</span>
               </div>

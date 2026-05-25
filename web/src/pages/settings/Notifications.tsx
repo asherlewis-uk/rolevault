@@ -139,10 +139,10 @@ export default function Notifications() {
             style={{ padding: 0 }}
           >
             <SectionRow icon={MessageCircle} iconColor="var(--spectral-violet)" label="New Messages" desc="When a character responds to you" checked={push.messages} onChange={(v) => toggle("push", "messages", v)} />
-            <SectionRow icon={Heart} iconColor="var(--spectral-pink)" label="Reactions" desc="Likes and reactions on your characters" checked={push.reactions} onChange={(v) => toggle("push", "reactions", v)} />
-            <SectionRow icon={Sparkles} iconColor="var(--spectral-cyan)" label="New Characters" desc="Characters created by people you follow" checked={push.newChars} onChange={(v) => toggle("push", "newChars", v)} />
+            <SectionRow icon={Heart} iconColor="var(--spectral-rose)" label="Reactions" desc="Likes and reactions on your characters" checked={push.reactions} onChange={(v) => toggle("push", "reactions", v)} />
+            <SectionRow icon={Sparkles} iconColor="var(--spectral-gold)" label="New Characters" desc="Characters created by people you follow" checked={push.newChars} onChange={(v) => toggle("push", "newChars", v)} />
             <SectionRow icon={Star} iconColor="var(--spectral-amber)" label="Featured" desc="When your character gets featured" checked={push.featured} onChange={(v) => toggle("push", "featured", v)} />
-            <SectionRow icon={Users} iconColor="var(--spectral-green)" label="Follows" desc="When someone follows your profile" checked={push.follows} onChange={(v) => toggle("push", "follows", v)} />
+            <SectionRow icon={Users} iconColor="var(--spectral-emerald)" label="Follows" desc="When someone follows your profile" checked={push.follows} onChange={(v) => toggle("push", "follows", v)} />
             <div className="flex items-center gap-3 px-4 py-3.5">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ background: "hsl(var(--primary) / 0.12)", border: "1px solid hsl(var(--primary) / 0.25)" }}>
@@ -163,9 +163,9 @@ export default function Notifications() {
             Email
           </p>
           <div className="panel rounded-2xl overflow-hidden" style={{ padding: 0 }}>
-            <SectionRow icon={Mail} iconColor="var(--spectral-cyan)" label="Weekly Digest" desc="Your activity summary each week" checked={email.digest} onChange={(v) => toggle("email", "digest", v)} />
+            <SectionRow icon={Mail} iconColor="var(--spectral-gold)" label="Weekly Digest" desc="Your activity summary each week" checked={email.digest} onChange={(v) => toggle("email", "digest", v)} />
             <SectionRow icon={Megaphone} iconColor="var(--spectral-amber)" label="Marketing" desc="Tips, stories and product news" checked={email.marketing} onChange={(v) => toggle("email", "marketing", v)} />
-            <SectionRow icon={Star} iconColor="var(--spectral-green)" label="Billing Receipts" desc="Invoices and subscription changes" checked={email.billing} onChange={(v) => toggle("email", "billing", v)} />
+            <SectionRow icon={Star} iconColor="var(--spectral-emerald)" label="Billing Receipts" desc="Invoices and subscription changes" checked={email.billing} onChange={(v) => toggle("email", "billing", v)} />
             <div className="flex items-center gap-3 px-4 py-3.5">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ background: "hsl(var(--destructive) / 0.1)", border: "1px solid hsl(var(--destructive) / 0.2)" }}>

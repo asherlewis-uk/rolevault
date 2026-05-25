@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 const navLinks = [
   { label: "Discover", to: "/discover" },
   { label: "Create", to: "/create" },
-  { label: "Pricing", to: "/profile" },
 ];
 
 export function LandingNav() {
@@ -37,7 +36,7 @@ export function LandingNav() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center group-hover:shadow-glow-violet transition-all duration-300">
+          <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center group-hover:shadow-glow-primary transition-all duration-300">
             <Sparkles className="w-4.5 h-4.5 text-primary-foreground" />
           </div>
           <span className="font-display font-bold text-xl gradient-text">RoleVault</span>

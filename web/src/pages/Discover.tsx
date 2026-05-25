@@ -6,16 +6,17 @@ import { characters, categories, trendingTags } from "@/data/characters";
 import { CharacterCard } from "@/components/CharacterCard";
 import { AppNavLink } from "@/components/AppNavLink";
 import { useFavourites } from "@/hooks/useFavourites";
+import { useInputFocus } from "@/hooks/useInputFocus";
 
 /** Category → spectral edge color */
 function getCategorySpectral(category: string) {
   const cat = category.toLowerCase();
-  if (cat === "companions")  return { edge: "hsl(var(--spectral-violet))", glow: "hsl(var(--spectral-violet) / 0.18)", border: "hsl(var(--spectral-violet) / 0.32)" };
-  if (cat === "educational") return { edge: "hsl(var(--spectral-cyan))",   glow: "hsl(var(--spectral-cyan) / 0.18)",   border: "hsl(var(--spectral-cyan) / 0.32)" };
-  if (cat === "roleplay")    return { edge: "hsl(var(--spectral-orange))", glow: "hsl(var(--spectral-orange) / 0.15)", border: "hsl(var(--spectral-orange) / 0.28)" };
-  if (cat === "fantasy")     return { edge: "hsl(var(--spectral-pink))",   glow: "hsl(var(--spectral-pink) / 0.16)",   border: "hsl(var(--spectral-pink) / 0.28)" };
-  if (cat === "wellness")    return { edge: "hsl(var(--spectral-green))",  glow: "hsl(var(--spectral-green) / 0.16)",  border: "hsl(var(--spectral-green) / 0.28)" };
-  return { edge: "hsl(var(--spectral-violet))", glow: "hsl(var(--spectral-violet) / 0.18)", border: "hsl(var(--spectral-violet) / 0.3)" };
+  if (cat === "companions")  return { edge: "hsl(var(--spectral-gold))",    glow: "hsl(var(--spectral-gold) / 0.18)",    border: "hsl(var(--spectral-gold) / 0.32)" };
+  if (cat === "educational") return { edge: "hsl(var(--spectral-emerald))",  glow: "hsl(var(--spectral-emerald) / 0.18)",  border: "hsl(var(--spectral-emerald) / 0.32)" };
+  if (cat === "roleplay")    return { edge: "hsl(var(--spectral-amber))",   glow: "hsl(var(--spectral-amber) / 0.15)",   border: "hsl(var(--spectral-amber) / 0.28)" };
+  if (cat === "fantasy")     return { edge: "hsl(var(--spectral-rose))",    glow: "hsl(var(--spectral-rose) / 0.16)",    border: "hsl(var(--spectral-rose) / 0.28)" };
+  if (cat === "wellness")    return { edge: "hsl(var(--spectral-gold))",    glow: "hsl(var(--spectral-gold) / 0.16)",    border: "hsl(var(--spectral-gold) / 0.28)" };
+  return { edge: "hsl(var(--spectral-gold))", glow: "hsl(var(--spectral-gold) / 0.18)", border: "hsl(var(--spectral-gold) / 0.3)" };
 }
 
 const navItems = [
@@ -37,6 +38,7 @@ export default function Discover() {
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [activeSort, setActiveSort] = useState("trending");
   const { isFavourite, toggleFavourite } = useFavourites();
+  const searchFocus = useInputFocus({ borderFocus: "hsl(var(--primary) / 0.45)", borderBlur: "hsl(var(--border) / 0.6)" });
 
   const filtered = characters.filter((c) => {
     const matchesCategory =
@@ -133,13 +135,9 @@ export default function Discover() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search characters, creators, topics…"
-                className="w-full rounded-xl pl-9 pr-4 py-2.5 text-foreground placeholder:text-muted-foreground/40 font-body text-sm focus:outline-none transition-colors duration-200"
-                style={{
-                  background: "hsl(var(--background) / 0.6)",
-                  border: "1px solid hsl(var(--border) / 0.6)",
-                }}
-                onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.45)")}
-                onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.6)")}
+                className="w-full rounded-xl pl-9 pr-4 py-2.5 text-sm surface-inset"
+                onFocus={searchFocus.handleFocus}
+                onBlur={searchFocus.handleBlur}
               />
               {searchQuery && (
                 <button

@@ -70,13 +70,14 @@ export default {
         violet:  "hsl(var(--primary))",
         sky:     "hsl(var(--secondary))",
         surface: "hsl(var(--card))",
-        /* Spectral edge-light accents */
+        /* Spectral edge-light accents — warm stage palette */
         spectral: {
-          violet: "hsl(var(--spectral-violet))",
-          cyan:   "hsl(var(--spectral-cyan))",
-          green:  "hsl(var(--spectral-green))",
-          pink:   "hsl(var(--spectral-pink))",
-          orange: "hsl(var(--spectral-orange))",
+          gold:    "hsl(var(--spectral-gold))",
+          crimson: "hsl(var(--spectral-crimson))",
+          emerald: "hsl(var(--spectral-emerald))",
+          rose:    "hsl(var(--spectral-rose))",
+          amber:   "hsl(var(--spectral-amber))",
+          violet:  "hsl(var(--spectral-violet))",
         },
       },
       borderRadius: {
@@ -94,10 +95,10 @@ export default {
         "gradient-accent":    "var(--gradient-accent)",
       },
       boxShadow: {
-        "glow-violet":  "var(--shadow-glow-violet)",
-        "glow-cyan":    "var(--shadow-glow-cyan)",
-        "card":         "var(--shadow-card)",
-        "elevated":     "var(--shadow-elevated)",
+        "glow-primary":   "var(--shadow-glow-primary)",
+        "glow-secondary": "var(--shadow-glow-secondary)",
+        "card":           "var(--shadow-card)",
+        "elevated":       "var(--shadow-elevated)",
       },
       spacing: {
         "4.5": "1.125rem",
@@ -140,8 +141,12 @@ export default {
           "100%": { transform: "translateX(0)",    opacity: "1" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 12px hsl(271 76% 53% / 0.3)" },
-          "50%":      { boxShadow: "0 0 28px hsl(271 76% 53% / 0.7), 0 0 60px hsl(271 76% 53% / 0.2)" },
+          "0%, 100%": { boxShadow: "0 0 12px hsl(var(--primary) / 0.3)" },
+          "50%":      { boxShadow: "0 0 28px hsl(var(--primary) / 0.5), 0 0 60px hsl(var(--primary) / 0.15)" },
+        },
+        "pulse-send": {
+          "0%, 100%": { transform: "scale(1)",   boxShadow: "0 3px 14px hsl(var(--primary) / 0.32)" },
+          "50%":      { transform: "scale(1.06)", boxShadow: "0 4px 22px hsl(var(--primary) / 0.48)" },
         },
         "float": {
           "0%, 100%": { transform: "translateY(0)" },

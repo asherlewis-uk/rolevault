@@ -12,6 +12,7 @@ import { characters } from "@/data/characters";
 import { useAuth } from "@/context/AuthContext";
 import { useRecentChats } from "@/hooks/useRecentChats";
 import { useFavourites } from "@/hooks/useFavourites";
+import { useInputFocus } from "@/hooks/useInputFocus";
 
 const tabs = ["Overview", "Account", "Persona", "Characters", "Settings"];
 
@@ -39,17 +40,17 @@ const interests = ["Sci-Fi", "Philosophy", "Gaming", "Art", "Music", "Science", 
 function InfoBanner({ message, type = "info" }: { message: string; type?: "info" | "success" | "error" }) {
   const colors = {
     info: "hsl(var(--primary) / 0.12)",
-    success: "hsl(var(--spectral-green) / 0.12)",
+    success: "hsl(var(--spectral-emerald) / 0.12)",
     error: "hsl(var(--destructive) / 0.12)",
   };
   const borders = {
     info: "hsl(var(--primary) / 0.3)",
-    success: "hsl(var(--spectral-green) / 0.3)",
+    success: "hsl(var(--spectral-emerald) / 0.3)",
     error: "hsl(var(--destructive) / 0.3)",
   };
   const textColors = {
     info: "hsl(var(--primary))",
-    success: "hsl(var(--spectral-green))",
+    success: "hsl(var(--spectral-emerald))",
     error: "hsl(var(--destructive))",
   };
   return (
@@ -76,6 +77,12 @@ export default function Profile() {
   const { recents, getCharacter } = useRecentChats();
   const { favouriteChars } = useFavourites();
   const navigate = useNavigate();
+
+  // Input focus hooks
+  const emailFocus = useInputFocus();
+  const newPassFocus = useInputFocus();
+  const confirmPassFocus = useInputFocus();
+  const personaNameFocus = useInputFocus();
 
   // Active tab
   const [activeTab, setActiveTab] = useState("Overview");
@@ -325,7 +332,7 @@ export default function Profile() {
               style={{
                 background: activeTab === tab ? "hsl(var(--primary))" : "transparent",
                 color: activeTab === tab ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
-                boxShadow: activeTab === tab ? "var(--shadow-glow-violet)" : "none",
+                boxShadow: activeTab === tab ? "var(--shadow-glow-primary)" : "none",
               }}
             >
               {tab}
@@ -335,7 +342,7 @@ export default function Profile() {
 
         {/* ── Overview ── */}
         {activeTab === "Overview" && (
-          <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+          <motion.div key="overview" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.2 }} className="space-y-6">
             {/* Plans */}
             <div>
               <h2 className="font-display text-base font-bold text-foreground mb-4 flex items-center gap-2">
@@ -454,10 +461,9 @@ export default function Profile() {
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="New email address"
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
-                style={{ background: "hsl(var(--background) / 0.5)", border: "1px solid hsl(var(--border) / 0.6)" }}
-                onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.42)")}
-                onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.6)")}
+                className="w-full rounded-xl px-3.5 py-2.5 text-sm surface-inset"
+                onFocus={emailFocus.handleFocus}
+                onBlur={emailFocus.handleBlur}
               />
               <button
                 onClick={handleSaveEmail}
@@ -480,10 +486,9 @@ export default function Profile() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="New password"
-                  className="w-full rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none pr-10"
-                  style={{ background: "hsl(var(--background) / 0.5)", border: "1px solid hsl(var(--border) / 0.6)" }}
-                  onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.42)")}
-                  onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.6)")}
+                  className="w-full rounded-xl px-3.5 py-2.5 text-sm surface-inset pr-10"
+                  onFocus={newPassFocus.handleFocus}
+                  onBlur={newPassFocus.handleBlur}
                 />
                 <button
                   type="button"
@@ -498,10 +503,9 @@ export default function Profile() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
-                style={{ background: "hsl(var(--background) / 0.5)", border: "1px solid hsl(var(--border) / 0.6)" }}
-                onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.42)")}
-                onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.6)")}
+                className="w-full rounded-xl px-3.5 py-2.5 text-sm surface-inset"
+                onFocus={confirmPassFocus.handleFocus}
+                onBlur={confirmPassFocus.handleBlur}
               />
               <button
                 onClick={handleSavePassword}
@@ -549,10 +553,9 @@ export default function Profile() {
                 value={personaName}
                 onChange={(e) => setPersonaName(e.target.value)}
                 placeholder={currentDisplayName}
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/35 focus:outline-none"
-                style={{ background: "hsl(var(--background) / 0.5)", border: "1px solid hsl(var(--border) / 0.6)" }}
-                onFocus={e => (e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.42)")}
-                onBlur={e => (e.currentTarget.style.borderColor = "hsl(var(--border) / 0.6)")}
+                className="w-full rounded-xl px-3.5 py-2.5 text-sm surface-inset"
+                onFocus={personaNameFocus.handleFocus}
+                onBlur={personaNameFocus.handleBlur}
               />
             </div>
 
@@ -598,9 +601,9 @@ export default function Profile() {
                       onClick={() => toggleInterest(interest)}
                       className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
                       style={{
-                        background: active ? "hsl(var(--spectral-cyan) / 0.12)" : "hsl(var(--accent) / 0.5)",
-                        border: `1px solid ${active ? "hsl(var(--spectral-cyan) / 0.4)" : "hsl(var(--border) / 0.4)"}`,
-                        color: active ? "hsl(var(--spectral-cyan))" : "hsl(var(--muted-foreground))",
+                        background: active ? "hsl(var(--spectral-gold) / 0.12)" : "hsl(var(--accent) / 0.5)",
+                        border: `1px solid ${active ? "hsl(var(--spectral-gold) / 0.4)" : "hsl(var(--border) / 0.4)"}`,
+                        color: active ? "hsl(var(--spectral-gold))" : "hsl(var(--muted-foreground))",
                       }}
                     >
                       {interest}
@@ -663,7 +666,7 @@ export default function Profile() {
 
         {/* ── Characters ── */}
         {activeTab === "Characters" && (
-          <motion.div key="chars" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <motion.div key="chars" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.2 }}>
             <div className="panel rounded-xl p-10 text-center">
               <Sparkles className="w-10 h-10 text-primary/25 mx-auto mb-4" />
               <p className="text-foreground font-semibold mb-1.5">No characters yet</p>

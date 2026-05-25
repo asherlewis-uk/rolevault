@@ -21,8 +21,8 @@ const plans = [
     id: "pro", name: "Voyager", price: "$9.99", period: "/mo",
     features: ["Unlimited messages", "All characters", "Priority speed", "Create 10 characters"],
     current: false,
-    accentVar: "--spectral-cyan",
-    glowVar: "--spectral-cyan",
+    accentVar: "--spectral-emerald",
+    glowVar: "--spectral-emerald",
   },
   {
     id: "ultra", name: "Luminary", price: "$24.99", period: "/mo",
@@ -169,8 +169,8 @@ export default function Billing() {
                 className="flex items-center gap-3 px-4 py-3.5"
                 style={{ borderBottom: i < invoices.length - 1 ? "1px solid hsl(var(--border) / 0.25)" : "none" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: "hsl(var(--spectral-green) / 0.1)", border: "1px solid hsl(var(--spectral-green) / 0.25)" }}>
-                  <Star className="w-3.5 h-3.5" style={{ color: "hsl(var(--spectral-green))" }} />
+                  style={{ background: "hsl(var(--spectral-emerald) / 0.1)", border: "1px solid hsl(var(--spectral-emerald) / 0.25)" }}>
+                  <Star className="w-3.5 h-3.5" style={{ color: "hsl(var(--spectral-emerald))" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{inv.date}</p>

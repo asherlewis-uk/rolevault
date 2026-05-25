@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smell Report — RoleVault</title>
+  <style>
+    :root {
+      --bg: #0b0b10;
+      --surface: #14141e;
+      --border: #23232f;
+      --fg: #e2e2ea;
+      --muted: #7a7a8c;
+      --red: #f87171;
+      --amber: #fbbf24;
+      --green: #4ade80;
+      --violet: #a78bfa;
+      --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      padding: 2rem;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    header {
+      padding: 2rem 0 1.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      font-family: var(--font-mono);
+    }
+    .score-block {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      padding: 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .score-badge {
+      font-family: var(--font-mono);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--red);
+      letter-spacing: -0.03em;
+    }
+    .verdict {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--violet);
+    }
+    .odor {
+      padding: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+    }
+    .odor-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .odor-num {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      min-width: 1.5rem;
+    }
+    .odor-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .odor-status {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+    }
+    .status-detected { background: rgba(248, 113, 113, 0.12); color: var(--red); }
+    .status-clean { background: rgba(74, 222, 128, 0.12); color: var(--green); }
+    .odor-pattern { color: var(--amber); font-weight: 600; font-size: 0.8rem; margin-bottom: 0.35rem; }
+    .odor-evidence { color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
+    .odor-why { margin-top: 0.5rem; font-size: 0.82rem; color: var(--fg); border-left: 2px solid var(--border); padding-left: 0.75rem; }
+    .odor-action { margin-top: 0.5rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--violet); }
+    .heuristics-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      margin-top: 1rem;
+    }
+    .heuristics-table th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .heuristics-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid rgba(35, 35, 47, 0.5);
+    }
+    .heuristics-table .detected { color: var(--red); }
+    .heuristics-table .clean { color: var(--green); }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Design Smell Report</h1>
+  <div class="meta">RoleVault Web &middot; 2026-05-24 &middot; Surface: web/src/ (landing + authenticated app)</div>
+</header>
+
+<div class="score-block">
+  <div class="score-badge">2/10</div>
+  <div>
+    <div class="verdict">Identity Failure</div>
+    <div style="color: var(--muted); font-size: 0.82rem; margin-top: 0.25rem;">8 of 10 tells detected</div>
+  </div>
+</div>
+
+<section>
+  <h2>Verdict</h2>
+  <p style="color: var(--muted); font-size: 0.88rem; line-height: 1.7;">
+    The RoleVault web interface carries a strong generated-design odor. The surface is well-built — tokens are coherent, components are consistent, motion is restrained — but nearly every visual decision reads as the median AI-character-platform answer. The palette, layout rhythm, depth system, section structure, and proof objects could be dropped into any AI chat product without becoming wrong. The design is safe, competent, and forgettable.
+  </p>
+  <p style="color: var(--muted); font-size: 0.88rem; line-height: 1.7; margin-top: 0.75rem;">
+    The root issue is a <strong style="color: var(--fg);">domain reflex cascade</strong>: dark theme with violet-to-cyan spectral gradients, frosted glass on every surface, centered sections with icon toppers, and oversized stat monuments. These are the defaults an LLM reaches for when asked to design a futuristic AI product in 2025.
+  </p>
+  <p style="margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.78rem; color: var(--violet);">
+    Recommended mode: redesign — the smell is systemic across color, layout, depth, and section structure.
+  </p>
+</section>
+
+<section>
+  <h2>Odors Detected</h2>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">1</span>
+      <span class="odor-name">Tech Gradient</span>
+      <span class="odor-status status-detected">Detected</span>
+    </div>
+    <div class="odor-pattern">Violet (268°) to electric cyan (192°) gradients on hero text, CTAs, badges, card edges, logo mark.</div>
+    <div class="odor-evidence"><code>--gradient-accent</code>, <code>--gradient-spectral</code>, <code>.gradient-text</code> on hero headline, <code>.border-glow</code>, <code>.edge-light-top</code>, spectral card borders — all violet→cyan.</div>
+    <div class="odor-why">RoleVault is about character roleplay — intimacy, identity, theatrical presence. A violet-to-cyan tech gradient signals "AI infrastructure". The emotional register is wrong before a single character speaks.</div>
+    <div class="odor-action">→ recolor</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">2</span>
+      <span class="odor-name">Generic Tech Hue</span>
+      <span class="odor-status status-detected">Detected</span>
+    </div>
+    <div class="odor-pattern">Blue-violet (268°) as sole primary identity. Every accent is violet.</div>
+    <div class="odor-evidence"><code>--primary: 268 76% 60%</code> — buttons, active states, focus rings, avatar rings, glow shadows all violet. Spectral palette used only as decorative trim.</div>
+    <div class="odor-why">Character roleplay requires emotional range. A single hue flattens every character — Rex Noir, Seraphina, Coach Meridian — into the same brand color.</div>
+    <div class="odor-action">→ recolor</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">3</span>
+      <span class="odor-name">Feature Tile Grid</span>
+      <span class="odor-status status-detected">Detected</span>
+    </div>
+    <div class="odor-pattern">Six identical icon + heading + sentence cards in uniform 2×3 grid.</div>
+    <div class="odor-evidence"><code>Features.tsx</code>: 6 features, identical structure, no hierarchy. "Character Creation Studio" (the product's reason to exist) has same weight as "Instant Responses".</div>
+    <div class="odor-why">A roleplay platform has natural feature hierarchy. Treating them as equals buries the lead.</div>
+    <div class="odor-action">→ relayout</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">4</span>
+      <span class="odor-name">Accent Rail</span>
+      <span class="odor-status status-detected">Detected</span>
+    </div>
+    <div class="odor-pattern">Colored spectral top-edge stripes on cards, headers, drawer — decoration pretending to be hierarchy.</div>
+    <div class="odor-evidence"><code>CharacterCard.tsx</code>: spectral <code>h-px</code> line per category. <code>.edge-light-top::before</code> on headers. Drawer "spectral top edge". Category badge already encodes the same info.</div>
+    <div class="odor-why">1px decorative stripes simulate structure where none exists. The category badge already communicates the same information.</div>
+    <div class="odor-action">→ refine</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">5</span>
+      <span class="odor-name">Unearned Blur</span>
+      <span class="odor-status status-detected">Detected</span>
+    </div>
+    <div class="odor-pattern">Frosted glass on drawer, nav, cards, testimonials, FAQ, footer — no depth system underneath.</div>
+    <div class="odor-evidence">Blur applied to flat cards on solid dark background. Nothing behind them to reveal. Drawer <code>blur(28px)</code>, nav <code>glass</code>, testimonials <code>.glass</code>, FAQ <code>.glass</code>, footer CTA <code>.glass</code>.</div>
+    <div class="odor-why">Glassmorphism requires genuine depth — layers that overlap and reveal each other. The blur here is decorative, not functional.</div>
+    <div class="odor-action">→ surface / redesign</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">6</span>
+      <span class="odor-name">Stat Monument</span>
+      <span class="odor-status status-detected">Detected</span>
+    </div>
+    <div class="odor-pattern">Four oversized number clusters filling space where product story belongs.</div>
+    <div class="odor-evidence"><code>Hero.tsx</code>: "50M+", "10K+", "2M+", "4.9★" in equal-weight panels at hero bottom. Invented numbers with 6 characters in the data file.</div>
+    <div class="odor-why">The hero should make users want to talk to a character. Fake stats undermine trust and push actual characters below the fold.</div>
+    <div class="odor-action">→ relayout</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">7</span>
+      <span class="odor-name">Icon Topper</span>
+      <span class="odor-status status-detected">Detected</span>
+    </div>
+    <div class="odor-pattern">Sparkles icon in pill badge above every major section heading.</div>
+    <div class="odor-evidence">Hero, Features, and FeaturedCharacters all open with the same <code>&lt;Sparkles /&gt;</code> icon-badge pattern. Three consecutive sections, identical template.</div>
+    <div class="odor-why">The icon adds no information; it fills the template slot. Repetition signals generated, not designed.</div>
+    <div class="odor-action">→ refine</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">8</span>
+      <span class="odor-name">Center Stack</span>
+      <span class="odor-status status-detected">Detected</span>
+    </div>
+    <div class="odor-pattern">Everything center-aligned — hero, features, FAQ, testimonials, footer CTA, authenticated home.</div>
+    <div class="odor-evidence">Every section <code>text-center</code> with <code>max-w-* mx-auto</code>. No asymmetry, no editorial tension, no lane change between sections.</div>
+    <div class="odor-why">Centering everything reads as "I made no composition decision." The authenticated home should feel like an intimate space, not a marketing page.</div>
+    <div class="odor-action">→ relayout</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">9</span>
+      <span class="odor-name">Bounce Everywhere</span>
+      <span class="odor-status status-clean">Clean</span>
+    </div>
+    <div class="odor-evidence">Motion is restrained: <code>easeOut</code> fades, spring drawer with damping-30, 3px card lift. No elastic text, no bounce-on-scroll, no excessive stagger.</div>
+  </div>
+
+  <div class="odor">
+    <div class="odor-header">
+      <span class="odor-num">10</span>
+      <span class="odor-name">Default Type</span>
+      <span class="odor-status status-clean">Clean</span>
+    </div>
+    <div class="odor-evidence">Sora for display is a deliberate geometric choice. Inter for body paired with a distinct display face is defensible, not a default reflex.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Heuristics Table</h2>
+  <table class="heuristics-table">
+    <thead>
+      <tr><th>#</th><th>Odor</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Tech gradient</td><td class="detected">DETECTED</td></tr>
+      <tr><td>2</td><td>Generic tech hue</td><td class="detected">DETECTED</td></tr>
+      <tr><td>3</td><td>Feature tile grid</td><td class="detected">DETECTED</td></tr>
+      <tr><td>4</td><td>Accent rail</td><td class="detected">DETECTED</td></tr>
+      <tr><td>5</td><td>Unearned blur</td><td class="detected">DETECTED</td></tr>
+      <tr><td>6</td><td>Stat monument</td><td class="detected">DETECTED</td></tr>
+      <tr><td>7</td><td>Icon topper</td><td class="detected">DETECTED</td></tr>
+      <tr><td>8</td><td>Center stack</td><td class="detected">DETECTED</td></tr>
+      <tr><td>9</td><td>Bounce everywhere</td><td class="clean">CLEAN</td></tr>
+      <tr><td>10</td><td>Default type</td><td class="clean">CLEAN</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  Generated by /design smell &middot; RoleVault &middot; 2026-05-24<br>
+  Score: 2/10 &middot; 8 tells detected &middot; IDENTITY FAILURE
+</footer>
+
+</div>
+</body>
+</html>
