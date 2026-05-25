@@ -7,7 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index           from "./pages/Index";
 import SignIn          from "./pages/SignIn";
-import SignUp          from "./pages/SignUp";
+
 import Discover        from "./pages/Discover";
 import CharacterDetail from "./pages/CharacterDetail";
 import Chat            from "./pages/Chat";
@@ -33,7 +33,6 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/signin"       element={<SignIn />} />
-            <Route path="/signup"       element={<SignUp />} />
             <Route path="/magic-link"   element={<MagicLinkVerify />} />
 
             {/* Protected routes */}

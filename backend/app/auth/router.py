@@ -20,12 +20,10 @@ from app.models import User, MagicLinkToken
 from app.config import get_settings
 from app.auth.dependencies import get_current_user
 from app.schemas import (
-    UserCreate, LoginRequest, TokenResponse, RefreshRequest,
+    TokenResponse, RefreshRequest,
     UserResponse, AppleAuthRequest, MagicLinkRequest, MagicLinkVerifyRequest,
 )
 from app.auth.utils import (
-    hash_password,
-    verify_password,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -80,62 +78,6 @@ def _user_response(user: User) -> UserResponse:
         avatar_url=user.avatar_url,
         created_at=user.created_at,
         updated_at=user.updated_at,
-    )
-
-
-@router.post("/register", response_model=TokenResponse)
-async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
-    hashed = hash_password(payload.password)
-    email_lower = payload.email.lower().strip()
-
-    user = User(
-        id=uuid4(),
-        email=email_lower,
-        password=hashed,
-        display_name=payload.display_name,
-        avatar_url=payload.avatar_url,
-    )
-    db.add(user)
-    try:
-        await db.commit()
-        await db.refresh(user)
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
-        )
-
-    access_token = create_access_token(user.id)
-    refresh_token = create_refresh_token(user.id)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user=_user_response(user),
-    )
-
-
-@router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
-    email_lower = payload.email.lower().strip()
-
-    result = await db.execute(select(User).where(User.email == email_lower))
-    user = result.scalar_one_or_none()
-
-    if user is None or user.password == "" or not verify_password(payload.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-        )
-
-    access_token = create_access_token(user.id)
-    refresh_token = create_refresh_token(user.id)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user=_user_response(user),
     )
 
 

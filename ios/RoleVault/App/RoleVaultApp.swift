@@ -112,9 +112,6 @@ struct LoginView: View {
     @State private var magicLinkSent = false
     @State private var magicLinkToken: String?
     @State private var magicLinkLoading = false
-    @State private var email: String = ""
-    @State private var password: String = ""
-    @State private var loginLoading = false
 
     var body: some View {
         NavigationStack {
@@ -147,47 +144,6 @@ struct LoginView: View {
                             .signInWithAppleButtonStyle(.black)
                             .frame(height: 50)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                            // Email / Password Login
-                            VStack(spacing: 12) {
-                                TextField("Email", text: $email)
-                                    .textContentType(.emailAddress)
-                                    .keyboardType(.emailAddress)
-                                    .autocorrectionDisabled()
-                                    .textInputAutocapitalization(.never)
-                                    .padding()
-                                    .background(.thinMaterial)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                                SecureField("Password", text: $password)
-                                    .textContentType(.password)
-                                    .padding()
-                                    .background(.thinMaterial)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                                Button {
-                                    Task { await handleEmailLogin() }
-                                } label: {
-                                    HStack {
-                                        if loginLoading {
-                                            ProgressView().tint(.white)
-                                        } else {
-                                            Text("Sign In")
-                                                .font(.headline)
-                                        }
-                                    }
-                                    .foregroundStyle(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(RoleVaultColor.primary)
-                                    )
-                                    .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1.0)
-                                }
-                                .disabled(email.isEmpty || password.isEmpty || loginLoading)
-                            }
-                            .padding(.horizontal, 4)
 
                             Divider()
                                 .padding(.vertical, 4)
@@ -314,24 +270,6 @@ struct LoginView: View {
             } message: {
                 Text(errorMessage ?? "Unknown error")
             }
-        }
-    }
-
-    private func handleEmailLogin() async {
-        guard !email.isEmpty, !password.isEmpty else { return }
-        loginLoading = true
-        defer { loginLoading = false }
-        do {
-            _ = try await AuthService.shared.login(email: email, password: password)
-            HapticEngine.notification(.success)
-        } catch let apiError as APIError {
-            errorMessage = apiError.localizedDescription
-            showError = true
-            HapticEngine.notification(.error)
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
-            HapticEngine.notification(.error)
         }
     }
 

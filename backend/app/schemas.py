@@ -14,21 +14,12 @@ class UserBase(BaseModel):
     avatar_url: Optional[str] = None
 
 
-class UserCreate(UserBase):
-    password: str
-
-
 class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     created_at: datetime
     updated_at: datetime
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
 
 
 class TokenResponse(BaseModel):

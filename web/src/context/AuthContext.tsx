@@ -17,8 +17,6 @@ interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName?: string) => Promise<void>;
   signInWithApple: (identityToken: string) => Promise<void>;
   requestMagicLink: (email: string) => Promise<{ detail: string; token?: string; expires_at?: string }>;
   verifyMagicLink: (token: string) => Promise<void>;
@@ -32,15 +30,13 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   token: null,
   loading: true,
-  login: async () => {},
-  register: async () => {},
   signInWithApple: async () => {},
   requestMagicLink: async () => ({ detail: "Not yet implemented" }),
   verifyMagicLink: async () => {},
   signOut: () => {},
-  updateUserMeta: async () => ({ error: "Not yet implemented" }),
-  updateEmail: async () => ({ error: "Not yet implemented" }),
-  updatePassword: async () => ({ error: "Not yet implemented" }),
+  updateUserMeta: async () => ({ error: "Not yet implemented" as string | null }),
+  updateEmail: async () => ({ error: "Not yet implemented" as string | null }),
+  updatePassword: async () => ({ error: "Not yet implemented" as string | null }),
 });
 
 function setStoredTokens(accessToken: string, refreshToken?: string) {
@@ -85,22 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await apiFetch<TokenResponse>("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    handleTokenResponse(res);
-  }, [handleTokenResponse]);
-
-  const register = useCallback(async (email: string, password: string, displayName?: string) => {
-    const res = await apiFetch<TokenResponse>("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify({ email, password, display_name: displayName }),
-    });
-    handleTokenResponse(res);
-  }, [handleTokenResponse]);
-
   const signInWithApple = useCallback(async (identityToken: string) => {
     const res = await apiFetch<TokenResponse>("/api/auth/apple", {
       method: "POST",
@@ -138,8 +118,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     token,
     loading,
-    login,
-    register,
     signInWithApple,
     requestMagicLink,
     verifyMagicLink,
@@ -151,8 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     token,
     loading,
-    login,
-    register,
     signInWithApple,
     requestMagicLink,
     verifyMagicLink,

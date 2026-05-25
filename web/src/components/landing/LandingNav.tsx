@@ -82,7 +82,7 @@ export function LandingNav() {
               >
                 Sign In
               </Link>
-              <Link to="/signup">
+              <Link to="/signin">
                 <button className="btn-gradient px-5 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground">
                   Get Started Free
                 </button>
@@ -144,7 +144,7 @@ export function LandingNav() {
                         Sign In
                       </button>
                     </Link>
-                    <Link to="/signup" onClick={() => setMobileOpen(false)}>
+                    <Link to="/signin" onClick={() => setMobileOpen(false)}>
                       <button className="w-full btn-gradient rounded-xl py-2.5 text-sm font-semibold text-primary-foreground">
                         Get Started Free
                       </button>

@@ -1,10 +1,5 @@
 import Foundation
 
-struct LoginRequest: Codable {
-    let email: String
-    let password: String
-}
-
 struct MagicLinkResponse: Codable {
     let detail: String
     let token: String

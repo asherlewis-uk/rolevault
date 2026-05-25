@@ -53,23 +53,6 @@ final class AuthService {
         return response
     }
 
-    /// Authenticate with email and password, store tokens in Keychain, persist user account.
-    func login(email: String, password: String) async throws -> TokenResponse {
-        let request = LoginRequest(email: email, password: password)
-        let response: TokenResponse = try await api.post(path: "/api/auth/login", body: request)
-
-        try KeychainManager.shared.saveJWT(response.accessToken)
-        try KeychainManager.shared.saveRefreshToken(response.refreshToken)
-
-        await MainActor.run {
-            isAuthenticated = true
-        }
-
-        await persistUserAccount(remoteUser: response.user)
-
-        return response
-    }
-
     /// Call logout endpoint, clear Keychain tokens, reset app auth state.
     func logout() async throws {
         _ = try? await api.request(path: "/api/auth/logout", method: "POST")

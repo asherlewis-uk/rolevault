@@ -35,7 +35,7 @@ export function Footer() {
             <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
               Join millions of users having the most meaningful AI conversations of their lives.
             </p>
-            <Link to="/signup">
+            <Link to="/signin">
               <button className="btn-gradient rounded-xl px-8 py-4 text-base font-display font-semibold text-primary-foreground inline-flex items-center gap-2 group">
                 <Sparkles className="w-4 h-4" />
                 Create your free account

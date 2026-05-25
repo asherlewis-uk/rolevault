@@ -58,7 +58,7 @@ export function Hero() {
             }}
             className="flex flex-col sm:flex-row items-start gap-3"
           >
-            <Link to="/signup">
+            <Link to="/signin">
               <button className="btn-gradient rounded-xl px-8 py-3.5 text-sm font-display font-semibold text-primary-foreground flex items-center gap-2 group w-full sm:w-auto">
                 Start for Free
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />

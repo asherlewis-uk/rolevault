@@ -102,7 +102,7 @@ export default function Discover() {
           <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
             Access all characters with unlimited conversations.
           </p>
-          <Link to="/signup">
+          <Link to="/signin">
             <button className="w-full btn-gradient rounded-lg py-1.5 text-xs font-semibold text-primary-foreground">
               Upgrade to Pro
             </button>
