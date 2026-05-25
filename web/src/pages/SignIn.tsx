@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -18,9 +18,81 @@ import { useInputFocus } from "@/hooks/useInputFocus";
 
 type AuthMode = "password" | "magic-link";
 
+type AppleAuthConfig = {
+  clientId: string;
+  scope: string;
+  redirectURI: string;
+  usePopup: boolean;
+};
+
+type AppleAuth = {
+  init: (config: AppleAuthConfig) => void;
+  signIn: () => Promise<{ authorization?: { code?: string; id_token?: string } }>;
+};
+
+const appleAuthScriptUrl =
+  "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
+
+function getAppleAuth(): AppleAuth | null {
+  const apple = (window as Window & { AppleID?: { auth?: Partial<AppleAuth> } }).AppleID;
+  if (
+    !apple?.auth ||
+    typeof apple.auth.init !== "function" ||
+    typeof apple.auth.signIn !== "function"
+  ) {
+    return null;
+  }
+
+  return apple.auth as AppleAuth;
+}
+
+function loadAppleAuth(): Promise<AppleAuth> {
+  const existingAuth = getAppleAuth();
+  if (existingAuth) return Promise.resolve(existingAuth);
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${appleAuthScriptUrl}"]`);
+    const script = existingScript ?? document.createElement("script");
+
+    const timeout = window.setTimeout(() => {
+      reject(new Error("Apple Sign In is still loading. Please try again."));
+    }, 8000);
+
+    const finish = () => {
+      window.clearTimeout(timeout);
+      const auth = getAppleAuth();
+      if (auth) {
+        resolve(auth);
+      } else {
+        reject(new Error("Apple Sign In is not available. Please use email instead."));
+      }
+    };
+
+    script.addEventListener("load", finish, { once: true });
+    script.addEventListener(
+      "error",
+      () => {
+        window.clearTimeout(timeout);
+        reject(new Error("Apple Sign In failed to load. Please use email instead."));
+      },
+      { once: true }
+    );
+
+    if (!existingScript) {
+      script.src = appleAuthScriptUrl;
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  });
+}
+
 export default function SignIn() {
   const navigate = useNavigate();
   const { login, requestMagicLink, signInWithApple } = useAuth();
+  const appleClientId = import.meta.env.VITE_APPLE_CLIENT_ID?.trim();
+  const appleRedirectURI =
+    import.meta.env.VITE_APPLE_REDIRECT_URI || `${window.location.origin}/signin`;
+  const appleAuthRef = useRef<AppleAuth | null>(null);
 
   const [mode, setMode] = useState<AuthMode>("password");
   const [show, setShow] = useState(false);
@@ -33,6 +105,28 @@ export default function SignIn() {
 
   const emailFocus = useInputFocus();
   const passFocus = useInputFocus();
+
+  const initializeAppleAuth = useCallback(async () => {
+    if (!appleClientId) {
+      throw new Error("Apple Sign In is not configured for this site. Please use email instead.");
+    }
+
+    const appleAuth = await loadAppleAuth();
+    appleAuth.init({
+      clientId: appleClientId,
+      scope: "name email",
+      redirectURI: appleRedirectURI,
+      usePopup: true,
+    });
+    appleAuthRef.current = appleAuth;
+    return appleAuth;
+  }, [appleClientId, appleRedirectURI]);
+
+  useEffect(() => {
+    initializeAppleAuth().catch(() => {
+      appleAuthRef.current = null;
+    });
+  }, [initializeAppleAuth]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,20 +160,9 @@ export default function SignIn() {
   const handleAppleSignIn = async () => {
     setError(null);
 
-    // Apple Sign In JS SDK
-    const apple = (window as unknown as Record<string, unknown>).AppleID;
-    if (!apple || typeof apple.auth !== "object") {
-      setError("Apple Sign In is not available. Please use email instead.");
-      return;
-    }
-
     try {
-      const response = await (apple.auth as { signIn: (config: Record<string, string>) => Promise<{ authorization?: { code?: string; id_token?: string } }> }).signIn({
-        clientId: "com.rolevault.app",
-        redirectURI: `${window.location.origin}/signin`,
-        usePopup: "true",
-        scope: "name email",
-      });
+      const appleAuth = appleAuthRef.current ?? await initializeAppleAuth();
+      const response = await appleAuth.signIn();
 
       const idToken = response.authorization?.id_token;
       if (!idToken) {

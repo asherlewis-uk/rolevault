@@ -43,12 +43,16 @@ const AuthContext = createContext<AuthContextValue>({
   updatePassword: async () => ({ error: "Not yet implemented" }),
 });
 
-function setStoredToken(accessToken: string) {
+function setStoredTokens(accessToken: string, refreshToken?: string) {
   localStorage.setItem("rolevault_token", accessToken);
+  if (refreshToken) {
+    localStorage.setItem("rolevault_refresh_token", refreshToken);
+  }
 }
 
-function clearStoredToken() {
+function clearStoredTokens() {
   localStorage.removeItem("rolevault_token");
+  localStorage.removeItem("rolevault_refresh_token");
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -62,10 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       apiFetch<{ id: string; email: string; displayName?: string }>("/api/auth/me")
         .then((me) => {
           setUser(me);
-          setToken(storedToken);
+          setToken(localStorage.getItem("rolevault_token") ?? storedToken);
         })
         .catch(() => {
-          clearStoredToken();
+          clearStoredTokens();
+          setUser(null);
+          setToken(null);
         })
         .finally(() => setLoading(false));
     } else {
@@ -74,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleTokenResponse = (res: TokenResponse) => {
-    setStoredToken(res.access_token);
+    setStoredTokens(res.access_token, res.refresh_token);
     setToken(res.access_token);
     setUser(res.user);
   };
@@ -119,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = () => {
-    clearStoredToken();
+    clearStoredTokens();
     setToken(null);
     setUser(null);
   };

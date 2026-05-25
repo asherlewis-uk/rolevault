@@ -1,8 +1,11 @@
 import jwt as pyjwt
 import requests
+import smtplib
+import logging
 
 from uuid import uuid4
 from typing import Optional
+from email.message import EmailMessage
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +17,8 @@ from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
 from app.models import User, MagicLinkToken
+from app.config import get_settings
+from app.auth.dependencies import get_current_user
 from app.schemas import (
     UserCreate, LoginRequest, TokenResponse, RefreshRequest,
     UserResponse, AppleAuthRequest, MagicLinkRequest, MagicLinkVerifyRequest,
@@ -27,6 +32,44 @@ from app.auth.utils import (
 )
 
 router = APIRouter()
+settings = get_settings()
+logger = logging.getLogger(__name__)
+
+
+def _send_magic_link_email(recipient_email: str, token: str, expires_at: datetime) -> bool:
+    if not settings.smtp_host:
+        logger.warning("SMTP host is not configured; cannot send magic link email")
+        return False
+
+    magic_link = f"{settings.web_base_url.rstrip('/')}/magic-link?token={token}"
+
+    msg = EmailMessage()
+    msg["Subject"] = "Your RoleVault sign-in link"
+    msg["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
+    msg["To"] = recipient_email
+    msg.set_content(
+        "Use this one-time sign-in link to access your RoleVault account.\n\n"
+        f"{magic_link}\n\n"
+        f"This link expires at {expires_at.isoformat()}."
+    )
+
+    try:
+        if settings.smtp_use_tls:
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
+                server.starttls()
+                if settings.smtp_username and settings.smtp_password:
+                    server.login(settings.smtp_username, settings.smtp_password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
+                if settings.smtp_username and settings.smtp_password:
+                    server.login(settings.smtp_username, settings.smtp_password)
+                server.send_message(msg)
+    except Exception:
+        logger.exception("Failed to send magic link email")
+        return False
+
+    return True
 
 
 def _user_response(user: User) -> UserResponse:
@@ -132,6 +175,11 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
         refresh_token=new_refresh_token,
         user=_user_response(user),
     )
+
+
+@router.get("/me", response_model=UserResponse)
+async def me(current_user: User = Depends(get_current_user)):
+    return _user_response(current_user)
 
 
 @router.post("/apple", response_model=TokenResponse)
@@ -245,9 +293,21 @@ async def request_magic_link(payload: MagicLinkRequest, db: AsyncSession = Depen
     db.add(magic)
     await db.commit()
 
+    if settings.debug:
+        return {
+            "detail": "Magic link sent. Check your email.",
+            "token": token,
+            "expires_at": expires_at.isoformat(),
+        }
+
+    if not _send_magic_link_email(email_lower, token, expires_at):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send magic link email at this time",
+        )
+
     return {
         "detail": "Magic link sent. Check your email.",
-        "token": token,  # inline in dev; remove in production
         "expires_at": expires_at.isoformat(),
     }
 

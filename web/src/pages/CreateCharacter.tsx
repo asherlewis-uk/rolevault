@@ -12,8 +12,6 @@ const STEPS = ["Identity", "Personality", "Scenario", "Settings", "Preview"];
 
 export default function CreateCharacter() {
   const inputF = useInputFocus({ borderFocus: "hsl(var(--primary) / 0.5)", borderBlur: "hsl(var(--border) / 0.7)" });
-
-export default function CreateCharacter() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({

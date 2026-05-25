@@ -206,7 +206,6 @@ export default function Chat() {
                     {isActive && (
                       <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-sidebar-background" />
                     )}
-          </AnimatePresence>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{char?.name}</p>
@@ -414,6 +413,8 @@ export default function Chat() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+          </AnimatePresence>
 
             <div ref={bottomRef} />
           </div>

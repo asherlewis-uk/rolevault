@@ -25,14 +25,6 @@ export default function SignUp() {
   const nameFocus = useInputFocus();
   const emailFocus = useInputFocus();
   const passFocus = useInputFocus();
-  const [show, setShow] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const navigate = useNavigate();
 
   const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
   const strengthLabels = ["", "Weak", "Good", "Strong"];
