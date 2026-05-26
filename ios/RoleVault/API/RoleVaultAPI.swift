@@ -4,18 +4,13 @@ import Foundation
 final class RoleVaultAPI {
     static let shared = RoleVaultAPI()
 
-    var baseURL: String {
-        didSet {
-            UserDefaults.standard.set(baseURL, forKey: "rolevault_api_url")
-        }
-    }
+    let baseURL = "https://backend.asherlewis.online"
 
     private let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
     private init() {
-        self.baseURL = UserDefaults.standard.string(forKey: "rolevault_api_url") ?? "https://backend.asherlewis.online"
         self.session = URLSession.shared
         self.decoder = JSONDecoder()
         self.decoder.keyDecodingStrategy = .convertFromSnakeCase

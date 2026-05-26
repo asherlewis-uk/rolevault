@@ -5,18 +5,13 @@ import Foundation
 final class InferenceAPI {
     static let shared = InferenceAPI()
 
-    var baseURL: String {
-        didSet {
-            UserDefaults.standard.set(baseURL, forKey: "inference_api_url")
-        }
-    }
+    var baseURL = "https://api.asherlewis.online"
 
     private let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
     private init() {
-        self.baseURL = UserDefaults.standard.string(forKey: "inference_api_url") ?? "https://api.asherlewis.online"
         self.session = URLSession.shared
         self.decoder = JSONDecoder()
         self.encoder = JSONEncoder()
@@ -24,14 +19,14 @@ final class InferenceAPI {
 
     // MARK: - Request Builder
 
-    private func buildRequest(path: String, method: String, body: Data?) throws -> URLRequest {
+    private func buildRequest(path: String, method: String, body: Data?, accept: String = "text/event-stream") throws -> URLRequest {
         guard let url = URL(string: baseURL + path) else {
             throw APIError.invalidURL
         }
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.setValue(accept, forHTTPHeaderField: "Accept")
         request.httpBody = body
         return request
     }
@@ -94,10 +89,39 @@ final class InferenceAPI {
         return try await executeStream(req)
     }
 
+    // MARK: - Model Discovery
+
+    struct ModelInfo: Codable {
+        let id: String
+        let object: String
+        let created: Int?
+        let ownedBy: String?
+    }
+
+    struct ModelListResponse: Codable {
+        let object: String
+        let data: [ModelInfo]
+    }
+
+    func fetchAvailableModels() async throws -> [String] {
+        let req = try buildRequest(path: "/v1/models", method: "GET", body: nil, accept: "application/json")
+        let response: ModelListResponse = try await executeAndDecode(req)
+        return response.data.map { $0.id }
+    }
+
+    private func executeAndDecode<T: Decodable>(_ request: URLRequest) async throws -> T {
+        let (data, _) = try await executeRequest(request)
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw APIError.decodingError(error)
+        }
+    }
+
     // MARK: - Convenience Methods
 
     func get<T: Decodable>(path: String) async throws -> T {
-        let (data, _) = try await executeRequest(try buildRequest(path: path, method: "GET", body: nil))
+        let (data, _) = try await executeRequest(try buildRequest(path: path, method: "GET", body: nil, accept: "application/json"))
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
@@ -112,7 +136,7 @@ final class InferenceAPI {
         } catch {
             throw APIError.encodingError(error)
         }
-        let (data, _) = try await executeRequest(try buildRequest(path: path, method: "POST", body: bodyData))
+        let (data, _) = try await executeRequest(try buildRequest(path: path, method: "POST", body: bodyData, accept: "application/json"))
         do {
             return try decoder.decode(T.self, from: data)
         } catch {

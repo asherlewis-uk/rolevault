@@ -3,7 +3,7 @@ import Foundation
 @Observable
 final class ChatService {
     static let shared = ChatService()
-    static var defaultModel = ""  // set from backend config; empty until fetched
+    static var defaultModel = ConfigService.fallbackModel
     private let api = RoleVaultAPI.shared
     private let inference = InferenceAPI.shared
     private let decoder: JSONDecoder

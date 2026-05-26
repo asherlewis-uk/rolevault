@@ -1,113 +1,16 @@
 import SwiftUI
 
-struct HealthResponse: Codable {
-    let status: String
-    let timestamp: String
-    let service: String
-}
-
 struct BackendConfigView: View {
-    @State private var apiURLString: String = ""
-    @State private var inferenceURLString: String = ""
-    @State private var showTestResult: Bool = false
-    @State private var testSuccess: Bool = false
-    @State private var isTesting: Bool = false
-    @State private var serverConfig: ServerConfig?
-
     var body: some View {
         ZStack {
             AuroraBackground()
-
             Form {
-                Section("RoleVault Server") {
-                    TextField("https://backend.asherlewis.online", text: $apiURLString)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                }
-
-                Section("Inference Server") {
-                    TextField("https://api.asherlewis.online", text: $inferenceURLString)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                }
-
-                Section {
-                    Button {
-                        Task { await testConnection() }
-                    } label: {
-                        HStack {
-                            Text("Test Connection")
-                            if isTesting {
-                                Spacer()
-                                ProgressView()
-                            }
-                        }
-                    }
-                    .disabled(apiURLString.isEmpty || isTesting)
-
-                    if showTestResult {
-                        HStack {
-                            Image(systemName: testSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundStyle(testSuccess ? .green : .red)
-                            Text(testSuccess ? "Connected" : "Failed")
-                                .foregroundStyle(testSuccess ? .green : .red)
-                        }
-                    }
-                }
-
-                if let config = serverConfig {
-                    Section("Server Info") {
-                        LabeledContent("Version", value: config.version)
-                        LabeledContent("Models", value: config.models.joined(separator: ", "))
-                    }
-                }
-
-                Section {
-                    Button("Save") {
-                        HapticEngine.notification(.success)
-                        RoleVaultAPI.shared.baseURL = apiURLString.trimmingCharacters(in: .whitespaces)
-                        InferenceAPI.shared.baseURL = inferenceURLString.trimmingCharacters(in: .whitespaces)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .foregroundStyle(.tint)
+                if let url = URL(string: RoleVaultAPI.shared.baseURL) {
+                    LabeledContent("Server", value: url.host ?? "Unknown")
                 }
             }
             .scrollContentBackground(.hidden)
         }
         .navigationTitle("Backend")
-        .onAppear {
-            apiURLString = RoleVaultAPI.shared.baseURL
-            inferenceURLString = InferenceAPI.shared.baseURL
-        }
-    }
-
-    private func testConnection() async {
-        isTesting = true
-        defer { isTesting = false }
-
-        let originalAPI = RoleVaultAPI.shared.baseURL
-        let originalInference = InferenceAPI.shared.baseURL
-        RoleVaultAPI.shared.baseURL = apiURLString.trimmingCharacters(in: .whitespaces)
-        InferenceAPI.shared.baseURL = inferenceURLString.trimmingCharacters(in: .whitespaces)
-
-        do {
-            // Test backend health (public, no auth required)
-            let _: HealthResponse = try await RoleVaultAPI.shared.get(path: "/health")
-            await MainActor.run {
-                testSuccess = true
-                showTestResult = true
-            }
-        } catch {
-            await MainActor.run {
-                testSuccess = false
-                showTestResult = true
-            }
-        }
-
-        // Don't persist until user taps Save
-        RoleVaultAPI.shared.baseURL = originalAPI
-        InferenceAPI.shared.baseURL = originalInference
     }
 }

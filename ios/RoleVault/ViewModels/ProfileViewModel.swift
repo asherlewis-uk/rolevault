@@ -5,8 +5,6 @@ import SwiftData
 final class ProfileViewModel {
     var errorMessage: String?
     var showError = false
-    var backendURL: String = RoleVaultAPI.shared.baseURL
-    var inferenceURL: String = InferenceAPI.shared.baseURL
     var connectionTestResult: Bool?
     var isTestingConnection = false
 
@@ -74,18 +72,6 @@ final class ProfileViewModel {
     }
 
     // MARK: - Backend Configuration
-
-    func updateBackendURL(_ url: String) {
-        let trimmed = url.trimmingCharacters(in: .whitespaces)
-        backendURL = trimmed
-        RoleVaultAPI.shared.baseURL = trimmed
-    }
-
-    func updateInferenceURL(_ url: String) {
-        let trimmed = url.trimmingCharacters(in: .whitespaces)
-        inferenceURL = trimmed
-        InferenceAPI.shared.baseURL = trimmed
-    }
 
     func testConnection() async {
         isTestingConnection = true

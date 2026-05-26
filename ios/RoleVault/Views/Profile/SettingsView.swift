@@ -4,7 +4,7 @@ struct SettingsView: View {
     @AppStorage("hapticsEnabled") private var hapticsEnabled: Bool = true
     @AppStorage("darkModeOverride") private var darkModeOverride: Bool = false
     @AppStorage("streamResponses") private var streamResponses: Bool = true
-    @AppStorage("selectedModel") private var selectedModel: String = ""
+    @State private var selectedModel: String = ChatService.defaultModel
 
     var body: some View {
         ZStack {
@@ -29,25 +29,7 @@ struct SettingsView: View {
                             }
                         }
                         .onChange(of: selectedModel) { _, newValue in
-                            if !newValue.isEmpty {
-                                ChatService.defaultModel = newValue
-                            }
-                        }
-                    } else if let error = ConfigService.shared.configError {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(RoleVaultColor.secondary)
-                            Text(error)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    } else {
-                        HStack {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Loading models...")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            ChatService.defaultModel = newValue
                         }
                     }
                 }
@@ -65,12 +47,7 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .task {
-            if selectedModel.isEmpty || !ConfigService.shared.availableModels.contains(selectedModel) {
-                if let first = ConfigService.shared.availableModels.first {
-                    selectedModel = first
-                    ChatService.defaultModel = first
-                }
-            }
+            selectedModel = ChatService.defaultModel
         }
     }
 }

@@ -9,6 +9,10 @@
 # design-system
 - Do not override Tailwind's native font size scale (text-xs, text-sm, etc.) in projects that use shadcn/ui — shadcn components depend on the default sizes and will silently break. Add new semantic tokens (text-micro) or use CSS custom properties for type scale instead. Confidence: 0.70
 
+# security
+- Hardcode backend/API endpoints into the runtime rather than exposing them as user-facing configuration. Backend URLs and infrastructure details should not be user-visible or user-configurable. Confidence: 0.65
+- Probe available models from the inference endpoint directly (e.g., /v1/models on OpenAI-compatible APIs) rather than guessing model names or relying solely on backend /api/config model lists. The app should dynamically discover which models the inference server actually supports. Confidence: 0.75
+
 # reconstruction-workflow
 - All reconstruction patches must follow the mandatory 10-section output format: Problem, Root Cause, Severity, Systems Impacted, Implementation Strategy, Swift Patch, Migration Notes, Regression Risks, Validation Procedure, Cross-Agent Review Notes. Confidence: 0.80
 - Execute reconstruction in strict wave order: Wave 0 (Launch Blockers) → Wave 1 (Stability) → Wave 2 (Performance/Reliability) → Wave 3 (UX/Polish) → Wave 4 (Deferred). No downstream implementation before upstream waves stabilize. Confidence: 0.80
