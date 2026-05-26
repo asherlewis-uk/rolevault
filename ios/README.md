@@ -29,7 +29,7 @@
 - macOS with Xcode 15+
 - Apple Developer account (paid)
 - App Store Connect API Key for Fastlane uploads
-- Running RoleVault API backend (default: `https://backend.asherlewis.online`)
+- Running RoleVault API backend through the managed RoleVault service
 
 ## Project Structure
 
@@ -37,9 +37,7 @@ See `ARCHITECTURE.md` for full design rationale, schema diagrams, and API mappin
 
 ## Configuration
 
-Backend URL can be changed in-app via **Profile → Backend**, or by editing:
-- `RoleVaultAPI.shared.baseURL` programmatically
-- `UserDefaults` key `rolevault_base_url`
+Service endpoints are hardcoded in the app runtime and are not user-configurable.
 
 ## Tech Stack
 

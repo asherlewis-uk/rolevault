@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Settings, Moon, Sun, Monitor, Globe, Type, Zap, Sparkles, MessageCircle, ChevronRight, BrainCircuit } from "lucide-react";
+import { ArrowLeft, Settings, Moon, Sun, Monitor, Globe, Type, Zap, Sparkles, MessageCircle, ChevronRight } from "lucide-react";
 import { containerVariants, itemVariants } from "@/lib/animations";
-import { AIProviderSettings } from "@/components/settings/AIProviderSettings";
 
 interface ToggleProps { checked: boolean; onChange: (v: boolean) => void; }
 function Toggle({ checked, onChange }: ToggleProps) {
@@ -245,15 +244,6 @@ export default function Preferences() {
           </div>
         </motion.div>
 
-        {/* AI Provider */}
-        <motion.div variants={itemVariants}>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50 px-1 mb-2 flex items-center gap-1.5">
-            <BrainCircuit className="w-3.5 h-3.5" />
-            AI Provider
-          </p>
-          <AIProviderSettings />
-        </motion.div>
-
         {/* Advanced */}
         <motion.div variants={itemVariants}>
           <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50 px-1 mb-2">Advanced</p>
@@ -261,10 +251,9 @@ export default function Preferences() {
             {[
               { label: "Clear Chat History", desc: "Delete all saved conversations" },
               { label: "Reset Recommendations", desc: "Clear your personalized feed" },
-              { label: "Developer Options", desc: "Debug tools and API access" },
             ].map(({ label, desc }, i) => (
               <button key={label} className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors"
-                style={{ borderBottom: i < 2 ? "1px solid hsl(var(--border) / 0.25)" : "none" }}>
+                style={{ borderBottom: i < 1 ? "1px solid hsl(var(--border) / 0.25)" : "none" }}>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{label}</p>
                   <p className="text-xs text-muted-foreground/60 mt-0.5">{desc}</p>

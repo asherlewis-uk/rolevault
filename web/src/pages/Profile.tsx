@@ -5,7 +5,7 @@ import {
   User, Settings, Bell, Shield, CreditCard, LogOut,
   Edit2, MessageCircle, Heart, Bookmark, Star,
   ChevronRight, Sparkles, Crown, Check, ArrowLeft,
-  Mail, Lock, Eye, EyeOff, Save, X, AlertCircle,
+  Mail, Save, X, AlertCircle,
   Smile, Brain, Mic2, Palette, Globe,
 } from "lucide-react";
 import { characters } from "@/data/characters";
@@ -63,7 +63,7 @@ function InfoBanner({ message, type = "info" }: { message: string; type?: "info"
 }
 
 export default function Profile() {
-  const { user, signOut, updateUserMeta, updateEmail, updatePassword } = useAuth();
+  const { user, signOut, updateUserMeta, updateEmail } = useAuth();
 
   // Helper to read legacy/local metadata since new auth doesn't have user_metadata
   const getMeta = (key: string, fallback: string) => {
@@ -80,8 +80,6 @@ export default function Profile() {
 
   // Input focus hooks
   const emailFocus = useInputFocus();
-  const newPassFocus = useInputFocus();
-  const confirmPassFocus = useInputFocus();
   const personaNameFocus = useInputFocus();
 
   // Active tab
@@ -100,9 +98,6 @@ export default function Profile() {
 
   // Account management
   const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [accountMsg, setAccountMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [accountSaving, setAccountSaving] = useState(false);
 
@@ -144,28 +139,6 @@ export default function Profile() {
       setAccountMsg({ text: "Confirmation sent to your new email address.", type: "success" });
       setNewEmail("");
       setTimeout(() => setAccountMsg(null), 5000);
-    }
-  };
-
-  const handleSavePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      setAccountMsg({ text: "Passwords don't match.", type: "error" });
-      return;
-    }
-    if (newPassword.length < 6) {
-      setAccountMsg({ text: "Password must be at least 6 characters.", type: "error" });
-      return;
-    }
-    setAccountSaving(true);
-    const { error } = await updatePassword(newPassword);
-    setAccountSaving(false);
-    if (error) {
-      setAccountMsg({ text: error, type: "error" });
-    } else {
-      setAccountMsg({ text: "Password updated successfully.", type: "success" });
-      setNewPassword("");
-      setConfirmPassword("");
-      setTimeout(() => setAccountMsg(null), 3000);
     }
   };
 
@@ -472,48 +445,6 @@ export default function Profile() {
                 className="btn-gradient rounded-xl px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50 flex items-center gap-1.5"
               >
                 <Save className="w-3 h-3" />{accountSaving ? "Saving…" : "Update Email"}
-              </button>
-            </div>
-
-            {/* Change password */}
-            <div className="panel rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Lock className="w-3.5 h-3.5 text-primary" />
-                <p className="text-sm font-semibold text-foreground">Change Password</p>
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="New password"
-                  className="w-full rounded-xl px-3.5 py-2.5 text-sm surface-inset pr-10"
-                  onFocus={newPassFocus.handleFocus}
-                  onBlur={newPassFocus.handleBlur}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm surface-inset"
-                onFocus={confirmPassFocus.handleFocus}
-                onBlur={confirmPassFocus.handleBlur}
-              />
-              <button
-                onClick={handleSavePassword}
-                disabled={!newPassword || !confirmPassword || accountSaving}
-                className="btn-gradient rounded-xl px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50 flex items-center gap-1.5"
-              >
-                <Lock className="w-3 h-3" />{accountSaving ? "Saving…" : "Update Password"}
               </button>
             </div>
 

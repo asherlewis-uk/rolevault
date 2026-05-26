@@ -32,7 +32,7 @@ struct OnboardingView: View {
                     .font(RoleVaultTypography.largeTitle)
                     .multilineTextAlignment(.center)
 
-                Text("Create AI characters with unique personalities. Chat using your own language models. Your characters, your data, your rules.")
+                Text("Create AI characters with unique personalities. Chat through RoleVault's managed service. Your characters, your worlds, your stories.")
                     .font(RoleVaultTypography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -123,7 +123,7 @@ struct OnboardingView: View {
                 Text("You're all set")
                     .font(RoleVaultTypography.largeTitle)
 
-                Text("RoleVault connects to your inference server. Configure it in Settings, or start with the default server.")
+                Text("RoleVault is ready to connect through its managed service.")
                     .font(RoleVaultTypography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

@@ -25,8 +25,15 @@ final class ConfigService {
         do {
             let config: ServerConfig = try await api.get(path: "/api/config")
 
+            if let serverInferenceURL = config.inferenceUrl, serverInferenceURL != inference.baseURL {
+                await MainActor.run {
+                    configError = "Service configuration is invalid."
+                    isConfigured = false
+                }
+                throw APIError.serverError(500, "Service configuration is invalid.")
+            }
+
             await MainActor.run {
-                InferenceAPI.shared.baseURL = config.inferenceUrl
                 isConfigured = false
                 configError = nil
             }
@@ -63,6 +70,6 @@ final class ConfigService {
 }
 
 struct ServerConfig: Codable {
-    let inferenceUrl: String
+    let inferenceUrl: String?
     let version: String
 }

@@ -51,7 +51,7 @@ struct MessageInputBar: View {
             onSend()
         }) {
             if !ConfigService.shared.isConfigured {
-                Text("Check backend")
+                Text("Check service")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .frame(width: 44, height: 44)

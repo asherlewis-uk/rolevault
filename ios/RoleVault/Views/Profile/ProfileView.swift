@@ -24,12 +24,6 @@ struct ProfileView: View {
                             } label: {
                                 row(icon: "gear", title: "Settings", color: .gray)
                             }
-
-                            NavigationLink {
-                                BackendConfigView()
-                            } label: {
-                                row(icon: "server.rack", title: "Backend", color: SpectralAccent.amber)
-                            }
                         }
                     }
                     .padding(.horizontal)

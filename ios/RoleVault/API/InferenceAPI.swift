@@ -1,11 +1,10 @@
 import Foundation
 
-/// Client for LM Studio inference server (OpenAI-compatible /v1/chat/completions).
-/// No authentication required.
+/// Client for the managed RoleVault inference service.
 final class InferenceAPI {
     static let shared = InferenceAPI()
 
-    var baseURL = "https://api.asherlewis.online"
+    let baseURL = "https://api.asherlewis.online"
 
     private let session: URLSession
     private let decoder: JSONDecoder

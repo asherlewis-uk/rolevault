@@ -105,7 +105,6 @@ struct MainTabView: View {
 struct LoginView: View {
     @State private var errorMessage: String?
     @State private var showError = false
-    @State private var showBackendConfig = false
     @State private var appleSignInInProgress = false
     @State private var magicLinkEmail: String = ""
     @State private var showMagicLink = false
@@ -249,20 +248,6 @@ struct LoginView: View {
                     .padding(.horizontal, 16)
 
                     Spacer()
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showBackendConfig = true
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                    }
-                }
-            }
-            .sheet(isPresented: $showBackendConfig) {
-                NavigationStack {
-                    BackendConfigView()
                 }
             }
             .alert("Login Failed", isPresented: $showError) {

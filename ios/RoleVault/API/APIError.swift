@@ -14,7 +14,7 @@ enum APIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid API URL. Check backend configuration."
+            return "Invalid service URL."
         case .unauthorized:
             return "Session expired. Please log in again."
         case .notFound:

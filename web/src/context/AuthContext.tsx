@@ -23,7 +23,6 @@ interface AuthContextValue {
   signOut: () => void;
   updateUserMeta: (meta: Record<string, string>) => Promise<{ error: string | null }>;
   updateEmail: (email: string) => Promise<{ error: string | null }>;
-  updatePassword: (password: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -36,7 +35,6 @@ const AuthContext = createContext<AuthContextValue>({
   signOut: () => {},
   updateUserMeta: async () => ({ error: "Not yet implemented" as string | null }),
   updateEmail: async () => ({ error: "Not yet implemented" as string | null }),
-  updatePassword: async () => ({ error: "Not yet implemented" as string | null }),
 });
 
 function setStoredTokens(accessToken: string, refreshToken?: string) {
@@ -112,7 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUserMeta = useCallback(async () => ({ error: "Not yet implemented" as string | null }), []);
   const updateEmail = useCallback(async () => ({ error: "Not yet implemented" as string | null }), []);
-  const updatePassword = useCallback(async () => ({ error: "Not yet implemented" as string | null }), []);
 
   const value = useMemo(() => ({
     user,
@@ -124,7 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     updateUserMeta,
     updateEmail,
-    updatePassword,
   }), [
     user,
     token,
@@ -135,7 +131,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     updateUserMeta,
     updateEmail,
-    updatePassword,
   ]);
 
   return (

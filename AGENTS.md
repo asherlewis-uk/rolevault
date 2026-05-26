@@ -222,7 +222,7 @@ The architecture enforces strict separation between shared and user-scoped data:
 - **No hardcoded secrets** — API keys and tokens live in Keychain only.
 - **Keychain accessibility**: `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` (not iCloud-synced).
 - **No certificate pinning** — standard TLS via URLSession.
-- **Backend URL** is user-configurable at runtime and persisted in `UserDefaults` (key: `rolevault_base_url`). Default is `https://backend.asherlewis.online`.
+- **Backend and inference endpoints** are hardcoded in the runtime and are not user-configurable. Do not add in-app endpoint editors, `UserDefaults` endpoint overrides, or deployment-time frontend endpoint knobs.
 - **Camera / Photos**: `Info.plist` declares usage descriptions for avatar selection only.
 - **Push notifications**: `aps-environment` entitlement is set to `development`.
 - **ATS**: No arbitrary-load exceptions; physical devices require HTTPS for non-localhost backends.

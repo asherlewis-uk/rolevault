@@ -17,7 +17,7 @@ RoleVault is a native iOS app for role-play character management, persona switch
 - **Xcode 16+** (download from Mac App Store or Apple Developer Portal)
 - **Apple Developer Account** (paid) — required for TestFlight distribution and code signing
 - **Swiftly** — Swift toolchain manager; installed automatically by `./setup-swiftly.sh`
-- **Running RoleVault API backend** — default target is `https://backend.asherlewis.online`; can be changed in-app
+- **Running RoleVault API backend** — production target is hardcoded to the managed RoleVault service
 
 ## Local Development
 
@@ -63,15 +63,11 @@ cd ios
 
 RoleVault connects to the RoleVault API backend. There is no bundled backend.
 
-1. **Enter backend URL**
-   - Open the app → **Profile** → **Backend**
-   - Enter your RoleVault API URL (default: `https://backend.asherlewis.online`)
-
-2. **Log in**
-   - Use your RoleVault account credentials (email + password, Apple Sign In, or magic link)
+1. **Log in**
+   - Use Sign in with Apple or a magic link
    - JWT and refresh tokens are stored in the iOS Keychain
 
-3. **Start chatting**
+2. **Start chatting**
    - Select a character → tap **Chat**
    - Messages stream in real time via SSE
 

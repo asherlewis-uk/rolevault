@@ -71,7 +71,7 @@ final class ProfileViewModel {
         }
     }
 
-    // MARK: - Backend Configuration
+    // MARK: - Service Diagnostics
 
     func testConnection() async {
         isTestingConnection = true

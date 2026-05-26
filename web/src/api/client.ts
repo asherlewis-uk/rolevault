@@ -1,8 +1,8 @@
-const API_URL = import.meta.env.VITE_API_URL || "https://backend.asherlewis.online";
+import { ROLEVAULT_API_URL } from "@/lib/runtimeConfig";
+
+const API_URL = ROLEVAULT_API_URL;
 
 const AUTH_PATHS_WITHOUT_REFRESH = new Set([
-  "/api/auth/login",
-  "/api/auth/register",
   "/api/auth/apple",
   "/api/auth/magic-link/request",
   "/api/auth/magic-link/verify",

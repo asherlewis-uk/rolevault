@@ -54,7 +54,7 @@ final class ChatService {
         let resolvedModel = model ?? ChatService.defaultModel
         guard !resolvedModel.isEmpty else {
             return AsyncThrowingStream { continuation in
-                continuation.finish(throwing: APIError.serverError(500, "No model configured. Check backend connection."))
+                continuation.finish(throwing: APIError.serverError(500, "No model configured. Check service connection."))
             }
         }
         let request = ChatRequest(
@@ -153,7 +153,7 @@ final class ChatService {
     ) async throws -> ChatMessage {
         let resolvedModel = model ?? ChatService.defaultModel
         guard !resolvedModel.isEmpty else {
-            throw APIError.serverError(500, "No model configured. Check backend connection.")
+            throw APIError.serverError(500, "No model configured. Check service connection.")
         }
         let request = ChatRequest(
             model: resolvedModel,

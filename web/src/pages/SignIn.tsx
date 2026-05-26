@@ -12,6 +12,7 @@ import {
 import heroBg from "@/assets/hero-bg.jpg";
 import { useAuth } from "@/context/AuthContext";
 import { useInputFocus } from "@/hooks/useInputFocus";
+import { APPLE_REDIRECT_URI, APPLE_WEB_CLIENT_ID } from "@/lib/runtimeConfig";
 
 type AppleAuthConfig = {
   clientId: string;
@@ -28,8 +29,10 @@ type AppleAuth = {
 const appleAuthScriptUrl =
   "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
 
+let appleAuthLoadPromise: Promise<AppleAuth> | null = null;
+
 function canShowMagicLinkDevToken() {
-  return import.meta.env.DEV || ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 }
 
 function getAppleAuth(): AppleAuth | null {
@@ -48,17 +51,20 @@ function getAppleAuth(): AppleAuth | null {
 function loadAppleAuth(): Promise<AppleAuth> {
   const existingAuth = getAppleAuth();
   if (existingAuth) return Promise.resolve(existingAuth);
+  if (appleAuthLoadPromise) return appleAuthLoadPromise;
 
-  return new Promise((resolve, reject) => {
+  appleAuthLoadPromise = new Promise((resolve, reject) => {
     const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${appleAuthScriptUrl}"]`);
     const script = existingScript ?? document.createElement("script");
 
     const timeout = window.setTimeout(() => {
+      appleAuthLoadPromise = null;
       reject(new Error("Apple Sign In is still loading. Please try again."));
     }, 8000);
 
     const finish = () => {
       window.clearTimeout(timeout);
+      appleAuthLoadPromise = null;
       const auth = getAppleAuth();
       if (auth) {
         resolve(auth);
@@ -72,6 +78,7 @@ function loadAppleAuth(): Promise<AppleAuth> {
       "error",
       () => {
         window.clearTimeout(timeout);
+        appleAuthLoadPromise = null;
         reject(new Error("Apple Sign In failed to load. Please use magic link instead."));
       },
       { once: true }
@@ -83,14 +90,15 @@ function loadAppleAuth(): Promise<AppleAuth> {
       document.body.appendChild(script);
     }
   });
+
+  return appleAuthLoadPromise;
 }
 
 export default function SignIn() {
   const navigate = useNavigate();
   const { requestMagicLink, signInWithApple } = useAuth();
-  const appleClientId = import.meta.env.VITE_APPLE_CLIENT_ID?.trim();
-  const appleRedirectURI =
-    import.meta.env.VITE_APPLE_REDIRECT_URI || `${window.location.origin}/signin`;
+  const appleClientId = APPLE_WEB_CLIENT_ID;
+  const appleRedirectURI = APPLE_REDIRECT_URI;
   const showMagicLinkDevToken = canShowMagicLinkDevToken();
   const appleAuthRef = useRef<AppleAuth | null>(null);
 
@@ -103,10 +111,6 @@ export default function SignIn() {
   const emailFocus = useInputFocus();
 
   const initializeAppleAuth = useCallback(async () => {
-    if (!appleClientId) {
-      throw new Error("Apple Sign In is not configured for this site. Please use magic link instead.");
-    }
-
     const appleAuth = await loadAppleAuth();
     appleAuth.init({
       clientId: appleClientId,
@@ -165,7 +169,7 @@ export default function SignIn() {
 
       // Translate cryptic Apple SDK errors into actionable messages
       if (message.includes("init")) {
-        message = "Apple Sign In is not configured correctly. Check VITE_APPLE_CLIENT_ID in your environment.";
+        message = "Apple Sign In is unavailable. Please try again.";
       } else if (message.includes("popup") || message.includes("closed")) {
         message = "Apple Sign In was cancelled. Please try again.";
       }
@@ -202,7 +206,7 @@ export default function SignIn() {
           <p className="text-muted-foreground text-sm mb-8">
             {magicLinkSent
               ? "We sent a one-time sign-in link to your email."
-              : "Sign in with Apple or use a magic link — no password needed."}
+              : "Sign in with Apple or use a magic link."}
           </p>
 
           {error && (
@@ -232,7 +236,7 @@ export default function SignIn() {
               <p className="text-muted-foreground text-sm mb-4">
                 We sent a magic link to{" "}
                 <span className="text-foreground font-medium">{email}</span>. Click it to sign
-                in instantly — no password needed.
+                in instantly.
               </p>
               {magicLinkDevToken && (
                 <div className="text-left">

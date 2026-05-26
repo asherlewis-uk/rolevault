@@ -8,6 +8,7 @@
 
 # design-system
 - Do not override Tailwind's native font size scale (text-xs, text-sm, etc.) in projects that use shadcn/ui — shadcn components depend on the default sizes and will silently break. Add new semantic tokens (text-micro) or use CSS custom properties for type scale instead. Confidence: 0.70
+- Treat the web frontend as the design source of truth for iOS SwiftUI: Swift screens should be a 1:1 native implementation of web product structure, visual tokens, hierarchy, and interaction intent wherever platform constraints allow. Any differences should come from native iOS mechanics, accessibility, safe areas, or system APIs, not from an intentionally separate iOS design. Confidence: 0.85
 
 # security
 - Hardcode backend/API endpoints into the runtime rather than exposing them as user-facing configuration. Backend URLs and infrastructure details should not be user-visible or user-configurable. Confidence: 0.65
