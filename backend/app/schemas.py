@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 # ---------------------------------------------------------------------------
@@ -9,7 +10,7 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 # ---------------------------------------------------------------------------
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: Optional[EmailStr] = None
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
 
@@ -18,6 +19,8 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    email_verified_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
@@ -31,18 +34,24 @@ class TokenResponse(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+    device_id: str = Field(min_length=16, max_length=128)
 
 
 class AppleAuthRequest(BaseModel):
     identity_token: str
+    device_id: str = Field(min_length=16, max_length=128)
+    platform: Optional[str] = Field(default=None, max_length=50)
 
 
 class MagicLinkRequest(BaseModel):
     email: EmailStr
+    device_id: str = Field(min_length=16, max_length=128)
 
 
 class MagicLinkVerifyRequest(BaseModel):
-    token: str
+    token: str = Field(min_length=32)
+    nonce: str = Field(min_length=32)
+    device_id: str = Field(min_length=16, max_length=128)
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +61,7 @@ class MagicLinkVerifyRequest(BaseModel):
 class CharacterBase(BaseModel):
     name: str
     subtitle: Optional[str] = None
-    visibility: str = "owned"
+    visibility: str = "global"
     category: Optional[str] = None
     backstory: Optional[str] = None
     response_directive: Optional[str] = None
@@ -78,7 +87,6 @@ class CharacterResponse(CharacterBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    owner_user_id: UUID
     created_at: datetime
     updated_at: datetime
 
@@ -123,7 +131,7 @@ class ConversationBase(BaseModel):
 
 
 class ConversationCreate(ConversationBase):
-    character_id: Optional[UUID] = None
+    character_id: UUID
     persona_id: Optional[UUID] = None
 
 
@@ -137,7 +145,7 @@ class ConversationResponse(ConversationBase):
 
     id: UUID
     user_id: UUID
-    character_id: Optional[UUID] = None
+    character_id: UUID
     persona_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime

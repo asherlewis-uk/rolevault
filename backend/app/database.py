@@ -1,6 +1,9 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
+from collections.abc import AsyncGenerator
+
 from sqlalchemy import MetaData
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
+
 from app.config import get_settings
 
 settings = get_settings()
@@ -21,12 +24,14 @@ async_session_maker = async_sessionmaker(
     autoflush=False,
 )
 
-# Use explicit schema for RoleVault tables
-metadata = MetaData(schema="rolevault")
-Base = declarative_base(metadata=metadata)
+rolevault_metadata = MetaData(schema="rolevault")
 
 
-async def get_db() -> AsyncSession:
+class Base(DeclarativeBase):
+    metadata = rolevault_metadata
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         try:
             yield session
