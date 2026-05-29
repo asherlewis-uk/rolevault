@@ -1,45 +1,69 @@
+import logging
+import secrets
+import smtplib
+from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
+from typing import Optional
+from urllib.parse import urlencode
+from uuid import UUID
+
 import jwt as pyjwt
 import requests
-import smtplib
-import logging
-
-from uuid import uuid4
-from typing import Optional
-from email.message import EmailMessage
-
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-import secrets
-from datetime import datetime, timedelta, timezone
-
-from app.database import get_db
-from app.models import User, MagicLinkToken
-from app.config import get_settings
 from app.auth.dependencies import get_current_user
-from app.schemas import (
-    TokenResponse, RefreshRequest,
-    UserResponse, AppleAuthRequest, MagicLinkRequest, MagicLinkVerifyRequest,
-)
 from app.auth.utils import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_token,
+)
+from app.config import get_settings
+from app.database import get_db, set_service_role_context
+from app.models import DeviceSession, MagicLinkToken, User
+from app.schemas import (
+    AppleAuthRequest,
+    MagicLinkRequest,
+    MagicLinkVerifyRequest,
+    RefreshRequest,
+    TokenResponse,
+    UserResponse,
 )
 
 router = APIRouter()
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+SESSION_TTL = timedelta(days=7)
 
-def _send_magic_link_email(recipient_email: str, token: str, expires_at: datetime) -> bool:
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _is_apple_email_verified(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() == "true"
+    return False
+
+
+def _send_magic_link_email(
+    recipient_email: str,
+    token: str,
+    nonce: str,
+    expires_at: datetime,
+) -> bool:
     if not settings.smtp_host:
         logger.warning("SMTP host is not configured; cannot send magic link email")
         return False
 
-    magic_link = f"{settings.web_base_url.rstrip('/')}/magic-link?token={token}"
+    query = urlencode({"token": token, "nonce": nonce})
+    magic_link = f"{settings.web_base_url.rstrip('/')}/magic-link?{query}"
 
     msg = EmailMessage()
     msg["Subject"] = "Your RoleVault sign-in link"
@@ -74,15 +98,76 @@ def _user_response(user: User) -> UserResponse:
     return UserResponse(
         id=user.id,
         email=user.email,
+        email_verified_at=user.email_verified_at,
         display_name=user.display_name,
         avatar_url=user.avatar_url,
+        last_login_at=user.last_login_at,
         created_at=user.created_at,
         updated_at=user.updated_at,
     )
 
 
+async def _upsert_device_session(
+    db: AsyncSession,
+    user: User,
+    device_id: str,
+    access_token: str,
+    refresh_token: str,
+    platform: Optional[str] = None,
+) -> None:
+    now = _now()
+    result = await db.execute(
+        select(DeviceSession).where(
+            DeviceSession.user_id == user.id,
+            DeviceSession.device_id == device_id,
+        )
+    )
+    session = result.scalar_one_or_none()
+
+    if session is None:
+        db.add(
+            DeviceSession(
+                user_id=user.id,
+                device_id=device_id,
+                session_token_hash=hash_token(access_token),
+                refresh_token_hash=hash_token(refresh_token),
+                platform=platform,
+                expires_at=now + SESSION_TTL,
+                last_seen_at=now,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        return
+
+    session.session_token_hash = hash_token(access_token)
+    session.refresh_token_hash = hash_token(refresh_token)
+    session.platform = platform or session.platform
+    session.expires_at = now + SESSION_TTL
+    session.last_seen_at = now
+    session.revoked_at = None
+    session.updated_at = now
+
+
+async def _issue_tokens_for_device(
+    db: AsyncSession,
+    user: User,
+    device_id: str,
+    platform: Optional[str] = None,
+) -> TokenResponse:
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
+    await _upsert_device_session(db, user, device_id, access_token, refresh_token, platform)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=_user_response(user),
+    )
+
+
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
+    set_service_role_context(db)
     token_data = decode_token(payload.refresh_token)
 
     if token_data is None or token_data.get("type") != "refresh":
@@ -91,32 +176,42 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
             detail="Invalid refresh token",
         )
 
-    from uuid import UUID
     try:
-        user_id = UUID(token_data["sub"])
+        user_id = UUID(str(token_data["sub"]))
     except (KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
 
+    now = _now()
+    result = await db.execute(
+        select(DeviceSession).where(
+            DeviceSession.user_id == user_id,
+            DeviceSession.device_id == payload.device_id,
+            DeviceSession.refresh_token_hash == hash_token(payload.refresh_token),
+            DeviceSession.revoked_at.is_(None),
+            DeviceSession.expires_at > now,
+        )
+    )
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
 
-    access_token = create_access_token(user.id)
-    new_refresh_token = create_refresh_token(user.id)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=new_refresh_token,
-        user=_user_response(user),
-    )
+    response = await _issue_tokens_for_device(db, user, payload.device_id, session.platform)
+    await db.commit()
+    return response
 
 
 @router.get("/me", response_model=UserResponse)
@@ -130,120 +225,114 @@ async def apple_auth(payload: AppleAuthRequest, db: AsyncSession = Depends(get_d
     Authenticate via Sign in with Apple.
     Verifies the Apple identity token, then finds or creates a user.
     """
-    # 1. Fetch Apple's public keys
     jwks_resp = requests.get("https://appleid.apple.com/auth/keys", timeout=10)
     jwks_resp.raise_for_status()
     jwks = jwks_resp.json()
 
-    # 2. Decode the header to find the key ID
     try:
         unverified_header = pyjwt.get_unverified_header(payload.identity_token)
     except pyjwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid identity token")
 
-    # 3. Find the matching key
     kid = unverified_header.get("kid")
     key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
     if key is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Key not found in Apple JWKS")
 
     public_key = pyjwt.algorithms.RSAAlgorithm.from_jwk(key)
-
-    # 4. Verify the token
-    # Accept either the iOS bundle ID or the web Services ID as audience
     valid_audiences = [settings.apple_ios_client_id]
     if settings.apple_web_client_id != settings.apple_ios_client_id:
         valid_audiences.append(settings.apple_web_client_id)
 
     decoded = None
     last_error = None
-    for aud in valid_audiences:
+    for audience in valid_audiences:
         try:
             decoded = pyjwt.decode(
                 payload.identity_token,
                 public_key,
                 algorithms=["RS256"],
-                audience=aud,
+                audience=audience,
                 issuer="https://appleid.apple.com",
             )
             break
-        except pyjwt.PyJWTError as e:
-            last_error = e
+        except pyjwt.PyJWTError as error:
+            last_error = error
 
     if decoded is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token verification failed: {str(last_error)}"
+            detail=f"Token verification failed: {str(last_error)}",
         )
 
-    apple_user_id = decoded.get("sub")
-    email = decoded.get("email")
-    if not apple_user_id:
+    apple_subject = decoded.get("sub")
+    if not apple_subject:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing sub claim in Apple token")
 
-    # 5. Look up by apple_user_id
-    result = await db.execute(select(User).where(User.apple_user_id == apple_user_id))
+    now = _now()
+    raw_email = decoded.get("email")
+    email = raw_email.lower().strip() if isinstance(raw_email, str) and raw_email else None
+    email_verified_at = now if email and _is_apple_email_verified(decoded.get("email_verified")) else None
+
+    set_service_role_context(db)
+    result = await db.execute(select(User).where(User.apple_subject == apple_subject))
     user = result.scalar_one_or_none()
 
-    if user:
-        # Existing user — return RoleVault JWT
-        access_token = create_access_token(user.id)
-        refresh_token = create_refresh_token(user.id)
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            user=_user_response(user),
+    if user is None and email:
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+        if user and user.apple_subject and user.apple_subject != apple_subject:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email is linked to another Apple ID")
+        if user:
+            user.apple_subject = apple_subject
+
+    if user is None:
+        user = User(
+            email=email,
+            email_verified_at=email_verified_at,
+            apple_subject=apple_subject,
+            display_name=email.split("@")[0] if email else "User",
+            last_login_at=now,
         )
+        db.add(user)
+        await db.flush()
+    else:
+        if email and user.email is None:
+            user.email = email
+        if email_verified_at and user.email_verified_at is None:
+            user.email_verified_at = email_verified_at
+        user.last_login_at = now
 
-    # 6. New user — create in RoleVault table only
-    display_name = email.split("@")[0] if email else "User"
-
-    user = User(
-        id=uuid4(),
-        email=email or f"{apple_user_id}@appleid.apple",
-        display_name=display_name,
-        apple_user_id=apple_user_id,
-        password="",  # Apple users don't use password auth
-    )
-    db.add(user)
     try:
+        response = await _issue_tokens_for_device(db, user, payload.device_id, payload.platform)
         await db.commit()
-        await db.refresh(user)
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email conflict")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Authentication identity conflict")
 
-    access_token = create_access_token(user.id)
-    refresh_token = create_refresh_token(user.id)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user=_user_response(user),
-    )
+    return response
 
 
 @router.post("/magic-link/request")
 async def request_magic_link(payload: MagicLinkRequest, db: AsyncSession = Depends(get_db)):
     """
-    Request a magic link. Generates a single-use token valid for 15 minutes.
-    In dev mode the token can be returned in the response body when explicitly enabled.
-    Future: send via Resend SMTP.
+    Request a magic link. Generates a single-use token and nonce valid for 15 minutes.
+    In dev mode they can be returned in the response body when explicitly enabled.
     """
-    email_lower = payload.email.lower().strip()
+    set_service_role_context(db)
+    email = payload.email.lower().strip()
+    token = secrets.token_urlsafe(48)
+    nonce = secrets.token_urlsafe(32)
+    expires_at = _now() + timedelta(minutes=15)
 
-    # Generate cryptographically random token
-    token = secrets.token_hex(32)
-
-    # Check if a user already exists with this email
-    result = await db.execute(select(User).where(User.email == email_lower))
+    result = await db.execute(select(User).where(User.email == email))
     existing_user = result.scalar_one_or_none()
 
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
-
     magic = MagicLinkToken(
-        email=email_lower,
-        token=token,
+        email=email,
+        token_hash=hash_token(token),
+        nonce_hash=hash_token(nonce),
+        device_id=payload.device_id,
         user_id=existing_user.id if existing_user else None,
         expires_at=expires_at,
     )
@@ -254,10 +343,11 @@ async def request_magic_link(payload: MagicLinkRequest, db: AsyncSession = Depen
         return {
             "detail": "Magic link sent. Check your email.",
             "token": token,
+            "nonce": nonce,
             "expires_at": expires_at.isoformat(),
         }
 
-    if not _send_magic_link_email(email_lower, token, expires_at):
+    if not _send_magic_link_email(email, token, nonce, expires_at):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Unable to send magic link email at this time",
@@ -272,16 +362,18 @@ async def request_magic_link(payload: MagicLinkRequest, db: AsyncSession = Depen
 @router.post("/magic-link/verify", response_model=TokenResponse)
 async def verify_magic_link(payload: MagicLinkVerifyRequest, db: AsyncSession = Depends(get_db)):
     """
-    Verify a magic link token. If valid, returns JWT pair.
-    Creates user on first use if no account exists for that email.
+    Verify a magic link token and nonce. If valid, returns JWT pair and binds
+    the authenticated session to the requesting device.
     """
-    now = datetime.now(timezone.utc)
+    set_service_role_context(db)
+    now = _now()
 
-    # Find valid, unused, non-expired token
     result = await db.execute(
         select(MagicLinkToken).where(
-            MagicLinkToken.token == payload.token,
-            MagicLinkToken.used == False,
+            MagicLinkToken.token_hash == hash_token(payload.token),
+            MagicLinkToken.nonce_hash == hash_token(payload.nonce),
+            MagicLinkToken.device_id == payload.device_id,
+            MagicLinkToken.consumed_at.is_(None),
             MagicLinkToken.expires_at > now,
         )
     )
@@ -293,39 +385,32 @@ async def verify_magic_link(payload: MagicLinkVerifyRequest, db: AsyncSession = 
             detail="Invalid or expired magic link",
         )
 
-    # Mark token as used immediately
-    magic.used = True
+    magic.consumed_at = now
     await db.flush()
 
-    # Find or create user
-    email_lower = magic.email.lower().strip()
-    result = await db.execute(select(User).where(User.email == email_lower))
+    email = magic.email.lower().strip()
+    result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
 
-    if user:
-        # Existing user — return JWT
-        access_token = create_access_token(user.id)
-        refresh_token = create_refresh_token(user.id)
-        await db.commit()
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            user=_user_response(user),
+    if user is None:
+        user = User(
+            email=email,
+            email_verified_at=now,
+            display_name=email.split("@")[0],
+            last_login_at=now,
         )
+        db.add(user)
+        await db.flush()
+    else:
+        if user.email_verified_at is None:
+            user.email_verified_at = now
+        user.last_login_at = now
 
-    # New user — create in RoleVault table only
-    display_name = email_lower.split("@")[0]
+    magic.user_id = user.id
 
-    user = User(
-        id=uuid4(),
-        email=email_lower,
-        display_name=display_name,
-        password="",  # magic link users don't have passwords
-    )
-    db.add(user)
     try:
+        response = await _issue_tokens_for_device(db, user, payload.device_id)
         await db.commit()
-        await db.refresh(user)
     except IntegrityError:
         await db.rollback()
         raise HTTPException(
@@ -333,18 +418,31 @@ async def verify_magic_link(payload: MagicLinkVerifyRequest, db: AsyncSession = 
             detail="User already exists",
         )
 
-    access_token = create_access_token(user.id)
-    refresh_token = create_refresh_token(user.id)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user=_user_response(user),
-    )
+    return response
 
 
 @router.post("/logout")
-async def logout():
-    # JWT tokens are stateless; logout is best-effort client-side.
-    # Future: add token to a blocklist in Redis.
+async def logout(
+    payload: Optional[RefreshRequest] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if payload is None:
+        return {"detail": "Logged out successfully"}
+
+    result = await db.execute(
+        select(DeviceSession).where(
+            DeviceSession.user_id == current_user.id,
+            DeviceSession.device_id == payload.device_id,
+            DeviceSession.refresh_token_hash == hash_token(payload.refresh_token),
+            DeviceSession.revoked_at.is_(None),
+        )
+    )
+    session = result.scalar_one_or_none()
+    if session:
+        now = _now()
+        session.revoked_at = now
+        session.updated_at = now
+        await db.commit()
+
     return {"detail": "Logged out successfully"}

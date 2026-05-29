@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -6,9 +7,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.database import get_db
-from app.models import User
-from app.auth.utils import decode_token
+from app.database import get_db, set_current_user_context
+from app.models import DeviceSession, User
+from app.auth.utils import decode_token, hash_token
 
 security = HTTPBearer()
 
@@ -27,19 +28,37 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id_str: Optional[str] = payload.get("sub")
-    if user_id_str is None:
+    user_id_claim = payload.get("sub")
+    if not isinstance(user_id_claim, str):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
 
     try:
-        user_id = UUID(user_id_str)
+        user_id = UUID(user_id_claim)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid user ID in token",
+        )
+
+    set_current_user_context(db, user_id)
+    now = datetime.now(timezone.utc)
+    session_result = await db.execute(
+        select(DeviceSession).where(
+            DeviceSession.user_id == user_id,
+            DeviceSession.session_token_hash == hash_token(token),
+            DeviceSession.revoked_at.is_(None),
+            DeviceSession.expires_at > now,
+        )
+    )
+    device_session = session_result.scalar_one_or_none()
+    if device_session is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session not found",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     result = await db.execute(select(User).where(User.id == user_id))

@@ -31,7 +31,6 @@ def _customization_response(c: CharacterCustomization) -> CharacterCustomization
 @router.get("", response_model=list[CharacterResponse])
 async def list_characters(
     category: Optional[str] = Query(None),
-    owner: Optional[UUID] = Query(None),
     visibility: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -40,8 +39,6 @@ async def list_characters(
     filters = []
     if category:
         filters.append(Character.category == category)
-    if owner:
-        filters.append(Character.owner_user_id == owner)
     if visibility:
         filters.append(Character.visibility == visibility)
     if filters:
@@ -55,17 +52,12 @@ async def list_characters(
 @router.post("", response_model=CharacterResponse, status_code=status.HTTP_201_CREATED)
 async def create_character(
     payload: CharacterCreate,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    character = Character(
-        owner_user_id=current_user.id,
-        **payload.model_dump(),
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Global characters are service-managed; create a character customization instead.",
     )
-    db.add(character)
-    await db.commit()
-    await db.refresh(character)
-    return _char_response(character)
 
 
 @router.get("/{character_id}", response_model=CharacterWithCustomizationResponse)
@@ -100,40 +92,23 @@ async def get_character(
 async def update_character(
     character_id: UUID,
     payload: CharacterUpdate,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Character).where(Character.id == character_id))
-    character = result.scalar_one_or_none()
-    if character is None:
-        raise HTTPException(status_code=404, detail="Character not found")
-    if character.owner_user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not owner of this character")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(character, field, value)
-
-    await db.commit()
-    await db.refresh(character)
-    return _char_response(character)
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Global characters are service-managed; update your character customization instead.",
+    )
 
 
 @router.delete("/{character_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_character(
     character_id: UUID,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Character).where(Character.id == character_id))
-    character = result.scalar_one_or_none()
-    if character is None:
-        raise HTTPException(status_code=404, detail="Character not found")
-    if character.owner_user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not owner of this character")
-
-    await db.delete(character)
-    await db.commit()
-    return None
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Global characters are service-managed and cannot be deleted from user scope.",
+    )
 
 
 @router.get("/{character_id}/customizations", response_model=Optional[CharacterCustomizationResponse])
