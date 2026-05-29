@@ -2,7 +2,9 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import Optional
 
-ROLEVAULT_INFERENCE_URL = "https://api.asherlewis.online"
+ROLEVAULT_INTERNAL_INFERENCE_URL = "https://api.asherlewis.online"
+ROLEVAULT_EXTERNAL_OPENAI_URL = "https://api.openai.com"
+ROLEVAULT_EXTERNAL_ANTHROPIC_URL = "https://api.anthropic.com"
 ROLEVAULT_WEB_BASE_URL = "https://rolevault.asherlewis.online"
 ROLEVAULT_APPLE_IOS_CLIENT_ID = "com.rolevault.app"
 ROLEVAULT_APPLE_WEB_CLIENT_ID = "com.rolevault.web"
@@ -18,7 +20,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
 
-    inference_url: str = ROLEVAULT_INFERENCE_URL
+    internal_inference_url: str = ROLEVAULT_INTERNAL_INFERENCE_URL
+    internal_inference_default_model: str = "google/gemini-3-flash-preview"
+    external_openai_url: str = ROLEVAULT_EXTERNAL_OPENAI_URL
+    external_openai_default_model: str = "gpt-4o-mini"
+    external_anthropic_url: str = ROLEVAULT_EXTERNAL_ANTHROPIC_URL
+    external_anthropic_default_model: str = "claude-3-5-haiku-latest"
 
     web_base_url: str = ROLEVAULT_WEB_BASE_URL
     smtp_host: Optional[str] = None
@@ -41,7 +48,6 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     settings = Settings()
-    settings.inference_url = ROLEVAULT_INFERENCE_URL
     settings.web_base_url = ROLEVAULT_WEB_BASE_URL
     settings.apple_ios_client_id = ROLEVAULT_APPLE_IOS_CLIENT_ID
     settings.apple_web_client_id = ROLEVAULT_APPLE_WEB_CLIENT_ID

@@ -4,7 +4,6 @@ import Foundation
 final class ConfigService {
     static let shared = ConfigService()
     private let api = RoleVaultAPI.shared
-    private let inference = InferenceAPI.shared
 
     static let fallbackModels: [String] = [
         "llama3.2",
@@ -25,21 +24,12 @@ final class ConfigService {
         do {
             let config: ServerConfig = try await api.get(path: "/api/config")
 
-            if let serverInferenceURL = config.inferenceUrl, serverInferenceURL != inference.baseURL {
-                await MainActor.run {
-                    configError = "Service configuration is invalid."
-                    isConfigured = false
-                }
-                throw APIError.serverError(500, "Service configuration is invalid.")
-            }
-
             await MainActor.run {
                 isConfigured = false
                 configError = nil
             }
 
-            // Probe the inference endpoint to discover models
-            let discovered = await probeInferenceModels()
+            let discovered = config.models ?? []
 
             await MainActor.run {
                 availableModels = discovered.isEmpty ? ConfigService.fallbackModels : discovered
@@ -60,16 +50,9 @@ final class ConfigService {
         }
     }
 
-    private func probeInferenceModels() async -> [String] {
-        do {
-            return try await inference.fetchAvailableModels()
-        } catch {
-            return []
-        }
-    }
 }
 
 struct ServerConfig: Codable {
-    let inferenceUrl: String?
+    let models: [String]?
     let version: String
 }

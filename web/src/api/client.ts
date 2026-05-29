@@ -139,3 +139,40 @@ export async function apiFetch<T = unknown>(
 
   return res.json();
 }
+
+export async function apiStreamFetch(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const buildHeaders = (token: string | null): Record<string, string> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(options.headers as Record<string, string>),
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  const execute = async (token: string | null) => {
+    return fetch(`${API_URL}${path}`, { ...options, headers: buildHeaders(token) });
+  };
+
+  let token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  let res = await execute(token);
+
+  if (res.status === 401 && shouldAttemptRefresh(path)) {
+    const refreshed = await getRefreshedToken();
+    if (refreshed) {
+      token = refreshed;
+      res = await execute(token);
+    }
+
+    if (res.status === 401) {
+      notifySessionRejected();
+    }
+  }
+
+  return res;
+}

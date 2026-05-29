@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ROLEVAULT_INFERENCE_URL } from "@/lib/runtimeConfig";
+import { apiFetch } from "@/api/client";
 
 export type ProviderID = "rolevault";
 
@@ -60,15 +60,12 @@ function storedModel() {
 
 async function discoverManagedModels(): Promise<ModelOption[]> {
   try {
-    const response = await fetch(`${ROLEVAULT_INFERENCE_URL}/v1/models`, {
+    const data = await apiFetch<{ models?: string[] }>("/api/inference/models", {
       signal: AbortSignal.timeout(3000),
     });
-    if (!response.ok) return [];
-
-    const data = await response.json();
-    return (data.data ?? []).map((model: { id: string }) => ({
-      id: model.id,
-      label: model.id,
+    return (data.models ?? []).map((model) => ({
+      id: model,
+      label: model,
     }));
   } catch {
     return [];
@@ -111,9 +108,8 @@ export function useLLMProvider() {
     setConnectionError("");
 
     try {
-      const response = await fetch(`${ROLEVAULT_INFERENCE_URL}/v1/chat/completions`, {
+      await apiFetch("/api/inference/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model,
           messages: [
@@ -123,11 +119,6 @@ export function useLLMProvider() {
           stream: false,
         }),
       });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
-        throw new Error(error.error ?? `HTTP ${response.status}`);
-      }
 
       setConnectionStatus("ok");
       return true;

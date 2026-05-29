@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const ROLEVAULT_INFERENCE_URL = "https://api.asherlewis.online";
+const ROLEVAULT_API_URL = "https://backend.asherlewis.online";
 const DEFAULT_MODEL = "google/gemini-3-flash-preview";
 
 const corsHeaders = {
@@ -35,10 +35,15 @@ serve(async (req) => {
     const body: ChatRequest = await req.json();
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const systemPrompt = typeof body.systemPrompt === "string" ? body.systemPrompt : "";
+    const authorization = req.headers.get("authorization");
 
-    const upstream = await fetch(`${ROLEVAULT_INFERENCE_URL}/v1/chat/completions`, {
+    if (!authorization?.startsWith("Bearer ")) {
+      return jsonError("Authentication required", 401);
+    }
+
+    const upstream = await fetch(`${ROLEVAULT_API_URL}/api/inference/chat/completions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: authorization },
       body: JSON.stringify({
         model: body.model || DEFAULT_MODEL,
         messages: [
@@ -50,8 +55,10 @@ serve(async (req) => {
     });
 
     if (!upstream.ok) {
-      const errorText = await upstream.text().catch(() => "");
-      return jsonError(`Inference service error (${upstream.status}): ${errorText.slice(0, 200)}`, 502);
+      if (upstream.status === 401) {
+        return jsonError("Authentication required", 401);
+      }
+      return jsonError(`Inference service error (${upstream.status})`, 502);
     }
 
     if (!upstream.body || body.stream === false) {

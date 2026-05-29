@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -249,6 +249,38 @@ class GalleryMomentResponse(GalleryMomentBase):
 # ---------------------------------------------------------------------------
 
 class ConfigResponse(BaseModel):
-    inference_url: str
     models: list[str]
     version: str
+
+
+# ---------------------------------------------------------------------------
+# Inference schemas
+# ---------------------------------------------------------------------------
+
+class ChatMessagePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["system", "user", "assistant"]
+    content: str = Field(min_length=1, max_length=20_000)
+
+
+class InferenceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    model: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    prompt: Optional[str] = Field(default=None, min_length=1, max_length=20_000)
+    messages: Optional[list[ChatMessagePayload]] = Field(default=None, min_length=1, max_length=100)
+    stream: bool = True
+    temperature: Optional[float] = Field(default=None, ge=0, le=2)
+    max_tokens: Optional[int] = Field(default=None, ge=1, le=8192)
+
+    @model_validator(mode="after")
+    def require_prompt_or_messages(self) -> "InferenceRequest":
+        if self.prompt is None and not self.messages:
+            raise ValueError("Either prompt or messages is required")
+        return self
+
+
+class ExternalInferenceRequest(InferenceRequest):
+    provider: Literal["openai", "anthropic"]
+    api_key: str = Field(min_length=20, max_length=4096, repr=False)

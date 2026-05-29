@@ -5,7 +5,6 @@ final class ChatService {
     static let shared = ChatService()
     static var defaultModel = ConfigService.fallbackModel
     private let api = RoleVaultAPI.shared
-    private let inference = InferenceAPI.shared
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
@@ -44,9 +43,9 @@ final class ChatService {
         }
     }
 
-    // MARK: - Streaming Send (Inference API)
+    // MARK: - Streaming Send
 
-    /// Send a message to LM Studio and receive the response as a real-time SSE stream.
+    /// Send a message through the authenticated backend inference gateway.
     func sendMessageStream(
         messages: [ChatCompletionMessage],
         model: String? = nil
@@ -72,8 +71,8 @@ final class ChatService {
                 do {
                     let body = try self.encoder.encode(request)
 
-                    let (bytes, _) = try await self.inference.stream(
-                        path: "/v1/chat/completions",
+                    let (bytes, _) = try await self.api.stream(
+                        path: "/api/inference/chat/completions",
                         method: "POST",
                         body: body
                     )

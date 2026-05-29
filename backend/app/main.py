@@ -49,6 +49,7 @@ from app.personas.router import router as personas_router
 from app.journals.router import router as journals_router
 from app.gallery.router import router as gallery_router
 from app.config_endpoint.router import router as config_router
+from app.inference.router import router as inference_router
 
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(characters_router, prefix="/api/characters", tags=["characters"])
@@ -57,3 +58,4 @@ app.include_router(personas_router, prefix="/api/personas", tags=["personas"])
 app.include_router(journals_router, prefix="/api/journal", tags=["journal"])
 app.include_router(gallery_router, prefix="/api/gallery", tags=["gallery"])
 app.include_router(config_router, prefix="/api/config", tags=["config"])
+app.include_router(inference_router, prefix="/api/inference", tags=["inference"])

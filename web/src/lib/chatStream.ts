@@ -3,7 +3,7 @@
  */
 
 import type { ProviderConfig } from "@/hooks/useLLMProvider";
-import { ROLEVAULT_INFERENCE_URL } from "@/lib/runtimeConfig";
+import { apiStreamFetch } from "@/api/client";
 
 export interface ChatMsg {
   role: "user" | "assistant" | "system";
@@ -79,7 +79,7 @@ export async function streamChat(opts: StreamOptions) {
   const { config, systemPrompt, messages, onDelta, onDone, onError } = opts;
 
   try {
-    const response = await fetch(`${ROLEVAULT_INFERENCE_URL}/v1/chat/completions`, {
+    const response = await apiStreamFetch("/api/inference/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -96,7 +96,7 @@ export async function streamChat(opts: StreamOptions) {
       let message = `HTTP ${response.status}`;
       try {
         const error = await response.json();
-        message = error.error ?? message;
+        message = error.detail ?? error.error ?? message;
       } catch {
         // Preserve the HTTP status fallback.
       }
