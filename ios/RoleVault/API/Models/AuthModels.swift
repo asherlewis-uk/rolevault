@@ -2,11 +2,12 @@ import Foundation
 
 struct MagicLinkResponse: Codable {
     let detail: String
-    let token: String
+    let token: String?
+    let nonce: String?
     let expiresAt: String
 
     enum CodingKeys: String, CodingKey {
-        case detail, token
+        case detail, token, nonce
         case expiresAt = "expires_at"
     }
 }
@@ -29,4 +30,10 @@ struct UserResponse: Codable {
 
 struct RefreshRequest: Codable {
     let refreshToken: String
+    let deviceId: String
+
+    enum CodingKeys: String, CodingKey {
+        case refreshToken = "refresh_token"
+        case deviceId = "device_id"
+    }
 }

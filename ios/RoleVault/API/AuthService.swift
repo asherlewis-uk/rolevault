@@ -1,4 +1,5 @@
 import Foundation
+import Security
 import SwiftData
 
 @Observable
@@ -13,9 +14,29 @@ final class AuthService {
         self.isAuthenticated = (try? KeychainManager.shared.retrieveJWT()) != nil
     }
 
+    static func createNonce(byteCount: Int = 32) throws -> String {
+        var bytes = [UInt8](repeating: 0, count: byteCount)
+        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        guard status == errSecSuccess else {
+            throw KeychainError.invalidStatus(status)
+        }
+
+        return Data(bytes)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
     /// Sign in with Apple. Sends the identity token to the backend which verifies it and returns a RoleVault JWT.
-    func signInWithApple(identityToken: String) async throws -> TokenResponse {
-        let body = ["identity_token": identityToken]
+    func signInWithApple(identityToken: String, nonce: String) async throws -> TokenResponse {
+        let deviceId = try KeychainManager.shared.retrieveOrCreateDeviceId()
+        let body = [
+            "identity_token": identityToken,
+            "device_id": deviceId,
+            "nonce": nonce,
+            "platform": "ios"
+        ]
         let response: TokenResponse = try await api.post(path: "/api/auth/apple", body: body)
 
         try KeychainManager.shared.saveJWT(response.accessToken)
@@ -32,13 +53,20 @@ final class AuthService {
 
     /// Request a magic link. Returns the token inline in dev mode.
     func requestMagicLink(email: String) async throws -> MagicLinkResponse {
-        let body = ["email": email]
+        let body = [
+            "email": email,
+            "device_id": try KeychainManager.shared.retrieveOrCreateDeviceId()
+        ]
         return try await api.post(path: "/api/auth/magic-link/request", body: body)
     }
 
     /// Verify a magic link token and authenticate.
-    func verifyMagicLink(token: String) async throws -> TokenResponse {
-        let body = ["token": token]
+    func verifyMagicLink(token: String, nonce: String) async throws -> TokenResponse {
+        let body = [
+            "token": token,
+            "nonce": nonce,
+            "device_id": try KeychainManager.shared.retrieveOrCreateDeviceId()
+        ]
         let response: TokenResponse = try await api.post(path: "/api/auth/magic-link/verify", body: body)
 
         try KeychainManager.shared.saveJWT(response.accessToken)

@@ -9,6 +9,14 @@ final class TokenInterceptor {
 
     private init() {}
 
+    static func shouldAttemptRefresh(for path: String) -> Bool {
+        let normalizedPath = path.hasPrefix("/") ? path : "/\(path)"
+        return normalizedPath != "/api/auth"
+            && !normalizedPath.hasPrefix("/api/auth/")
+            && normalizedPath != "/auth"
+            && !normalizedPath.hasPrefix("/auth/")
+    }
+
     /// Attempts to refresh the JWT using the stored refresh token.
     /// Prevents multiple simultaneous refresh calls.
     /// On failure, clears all tokens and publishes logout via AuthService.
@@ -33,7 +41,8 @@ final class TokenInterceptor {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-            let body = RefreshRequest(refreshToken: refreshToken)
+            let deviceId = try KeychainManager.shared.retrieveOrCreateDeviceId()
+            let body = RefreshRequest(refreshToken: refreshToken, deviceId: deviceId)
             request.httpBody = try JSONEncoder().encode(body)
 
             let (data, response) = try await URLSession.shared.data(for: request)

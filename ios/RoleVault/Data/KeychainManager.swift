@@ -88,6 +88,26 @@ final class KeychainManager {
 extension KeychainManager {
     static let jwtAccount = "rolevault_access"
     static let refreshAccount = "rolevault_refresh"
+    static let deviceIdAccount = "rolevault_device_id"
+
+    func retrieveOrCreateDeviceId() throws -> String {
+        if let existing = try? retrieveToken(for: Self.deviceIdAccount) {
+            let trimmed = existing.trimmingCharacters(in: .whitespacesAndNewlines)
+            if (16...128).contains(trimmed.count) {
+                return trimmed
+            }
+        }
+
+        var bytes = [UInt8](repeating: 0, count: 16)
+        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        guard status == errSecSuccess else {
+            throw KeychainError.invalidStatus(status)
+        }
+
+        let deviceId = bytes.map { String(format: "%02x", $0) }.joined()
+        try save(token: deviceId, for: Self.deviceIdAccount)
+        return deviceId
+    }
 
     func saveJWT(_ token: String) throws {
         try save(token: token, for: Self.jwtAccount)

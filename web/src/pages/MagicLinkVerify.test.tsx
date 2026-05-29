@@ -14,7 +14,7 @@ import MagicLinkVerify from "./MagicLinkVerify";
 
 function renderMagicLinkVerify() {
   return render(
-    <MemoryRouter initialEntries={["/magic-link?token=token-123"]}>
+    <MemoryRouter initialEntries={["/magic-link?token=token-123&nonce=nonce-123"]}>
       <Routes>
         <Route path="/magic-link" element={<MagicLinkVerify />} />
         <Route path="/" element={<div>Home</div>} />
@@ -36,14 +36,14 @@ describe("MagicLinkVerify", () => {
     const { rerender } = renderMagicLinkVerify();
 
     await waitFor(() => expect(firstVerify).toHaveBeenCalledTimes(1));
-    expect(firstVerify).toHaveBeenCalledWith("token-123");
+    expect(firstVerify).toHaveBeenCalledWith("token-123", "nonce-123");
     await screen.findByText("You're signed in!");
 
     const secondVerify = vi.fn().mockResolvedValue(undefined);
     authMock.verifyMagicLink = secondVerify;
 
     rerender(
-      <MemoryRouter initialEntries={["/magic-link?token=token-123"]}>
+      <MemoryRouter initialEntries={["/magic-link?token=token-123&nonce=nonce-123"]}>
         <Routes>
           <Route path="/magic-link" element={<MagicLinkVerify />} />
           <Route path="/" element={<div>Home</div>} />

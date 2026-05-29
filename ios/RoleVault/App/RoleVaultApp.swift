@@ -109,7 +109,10 @@ struct LoginView: View {
     @State private var magicLinkEmail: String = ""
     @State private var showMagicLink = false
     @State private var magicLinkSent = false
+    @State private var magicLinkInput = ""
     @State private var magicLinkToken: String?
+    @State private var magicLinkNonce: String?
+    @State private var pendingAppleNonce: String?
     @State private var magicLinkLoading = false
 
     var body: some View {
@@ -135,6 +138,15 @@ struct LoginView: View {
                                 .signIn,
                                 onRequest: { request in
                                     request.requestedScopes = [.fullName, .email]
+                                    do {
+                                        let nonce = try AuthService.createNonce()
+                                        pendingAppleNonce = nonce
+                                        request.nonce = nonce
+                                    } catch {
+                                        pendingAppleNonce = nil
+                                        errorMessage = error.localizedDescription
+                                        showError = true
+                                    }
                                 },
                                 onCompletion: { result in
                                     Task { await handleAppleSignIn(result) }
@@ -179,9 +191,9 @@ struct LoginView: View {
                                             .foregroundStyle(.secondary)
                                             .multilineTextAlignment(.center)
 
-                                        TextField("Paste token", text: Binding(
-                                            get: { magicLinkToken ?? "" },
-                                            set: { magicLinkToken = $0.isEmpty ? nil : $0 }
+                                        TextField("Paste magic link URL", text: Binding(
+                                            get: { magicLinkInput },
+                                            set: { updateMagicLinkInput($0) }
                                         ))
                                         .font(.system(.caption, design: .monospaced))
                                         .padding()
@@ -206,9 +218,9 @@ struct LoginView: View {
                                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                                                     .fill(RoleVaultColor.primary)
                                             )
-                                            .opacity(magicLinkToken == nil ? 0.5 : 1.0)
+                                            .opacity(magicLinkToken == nil || magicLinkNonce == nil ? 0.5 : 1.0)
                                         }
-                                        .disabled(magicLinkToken == nil || magicLinkLoading)
+                                        .disabled(magicLinkToken == nil || magicLinkNonce == nil || magicLinkLoading)
                                     } else {
                                         Button {
                                             Task { await requestMagicLink() }
@@ -235,6 +247,9 @@ struct LoginView: View {
                                         Button {
                                             showMagicLink = false
                                             magicLinkEmail = ""
+                                            magicLinkInput = ""
+                                            magicLinkToken = nil
+                                            magicLinkNonce = nil
                                         } label: {
                                             Text("Cancel")
                                                 .font(.subheadline)
@@ -263,15 +278,20 @@ struct LoginView: View {
         case .success(let authorization):
             guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
                   let identityToken = credential.identityToken,
-                  let tokenString = String(data: identityToken, encoding: .utf8) else {
+                  let tokenString = String(data: identityToken, encoding: .utf8),
+                  let nonce = pendingAppleNonce else {
                 errorMessage = "Failed to get Apple identity token"
                 showError = true
+                pendingAppleNonce = nil
                 return
             }
             appleSignInInProgress = true
-            defer { appleSignInInProgress = false }
+            defer {
+                appleSignInInProgress = false
+                pendingAppleNonce = nil
+            }
             do {
-                _ = try await AuthService.shared.signInWithApple(identityToken: tokenString)
+                _ = try await AuthService.shared.signInWithApple(identityToken: tokenString, nonce: nonce)
                 HapticEngine.notification(.success)
             } catch let apiError as APIError {
                 errorMessage = apiError.localizedDescription
@@ -283,6 +303,7 @@ struct LoginView: View {
                 HapticEngine.notification(.error)
             }
         case .failure(let error):
+            pendingAppleNonce = nil
             errorMessage = error.localizedDescription
             showError = true
             HapticEngine.notification(.error)
@@ -299,8 +320,10 @@ struct LoginView: View {
         defer { magicLinkLoading = false }
         do {
             let response: MagicLinkResponse = try await AuthService.shared.requestMagicLink(email: magicLinkEmail)
-            // Auto-fill token from dev response
+            // Auto-fill token and nonce from dev response
+            magicLinkInput = response.token ?? ""
             magicLinkToken = response.token
+            magicLinkNonce = response.nonce
             magicLinkSent = true
             HapticEngine.notification(.success)
         } catch let apiError as APIError {
@@ -314,12 +337,49 @@ struct LoginView: View {
         }
     }
 
+    private func updateMagicLinkInput(_ value: String) {
+        magicLinkInput = value
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            magicLinkToken = nil
+            magicLinkNonce = nil
+            return
+        }
+
+        if let payload = parseMagicLinkPayload(from: trimmed) {
+            magicLinkToken = payload.token
+            magicLinkNonce = payload.nonce
+            return
+        }
+
+        magicLinkToken = trimmed
+        magicLinkNonce = nil
+    }
+
+    private func parseMagicLinkPayload(from value: String) -> (token: String, nonce: String)? {
+        let queryItems = URLComponents(string: value)?.queryItems
+            ?? URLComponents(string: "https://rolevault.local/magic-link?\(value)")?.queryItems
+        let token = queryItems?
+            .first(where: { $0.name == "token" })?
+            .value?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let nonce = queryItems?
+            .first(where: { $0.name == "nonce" })?
+            .value?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let token, let nonce, !token.isEmpty, !nonce.isEmpty else {
+            return nil
+        }
+        return (token, nonce)
+    }
+
     private func verifyMagicLink() async {
-        guard let token = magicLinkToken else { return }
+        guard let token = magicLinkToken, let nonce = magicLinkNonce else { return }
         magicLinkLoading = true
         defer { magicLinkLoading = false }
         do {
-            _ = try await AuthService.shared.verifyMagicLink(token: token)
+            _ = try await AuthService.shared.verifyMagicLink(token: token, nonce: nonce)
             HapticEngine.notification(.success)
         } catch let apiError as APIError {
             errorMessage = apiError.localizedDescription

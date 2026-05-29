@@ -99,6 +99,9 @@ final class RoleVaultAPI {
         do {
             return try await executeRequest(req)
         } catch APIError.unauthorized {
+            guard TokenInterceptor.shouldAttemptRefresh(for: path) else {
+                throw APIError.unauthorized
+            }
             let refreshed = await TokenInterceptor.shared.attemptRefresh()
             guard refreshed else { throw APIError.unauthorized }
             let retryReq = try buildRequest(path: path, method: method, body: body)
@@ -111,6 +114,9 @@ final class RoleVaultAPI {
         do {
             return try await executeStream(req)
         } catch APIError.unauthorized {
+            guard TokenInterceptor.shouldAttemptRefresh(for: path) else {
+                throw APIError.unauthorized
+            }
             let refreshed = await TokenInterceptor.shared.attemptRefresh()
             guard refreshed else { throw APIError.unauthorized }
             let retryReq = try buildRequest(path: path, method: method, body: body, accept: accept)

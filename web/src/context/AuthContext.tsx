@@ -1,5 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
-import { apiFetch } from "@/api/client";
+import {
+  AUTH_SESSION_REJECTED_EVENT,
+  apiFetch,
+  clearStoredAuthTokens,
+  getAuthDeviceId,
+} from "@/api/client";
 
 export interface AuthUser {
   id: string;
@@ -17,9 +22,9 @@ interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
-  signInWithApple: (identityToken: string) => Promise<void>;
-  requestMagicLink: (email: string) => Promise<{ detail: string; token?: string; expires_at?: string }>;
-  verifyMagicLink: (token: string) => Promise<void>;
+  signInWithApple: (identityToken: string, nonce: string) => Promise<void>;
+  requestMagicLink: (email: string) => Promise<{ detail: string; token?: string; nonce?: string; expires_at?: string }>;
+  verifyMagicLink: (token: string, nonce: string) => Promise<void>;
   signOut: () => void;
   updateUserMeta: (meta: Record<string, string>) => Promise<{ error: string | null }>;
   updateEmail: (email: string) => Promise<{ error: string | null }>;
@@ -45,14 +50,24 @@ function setStoredTokens(accessToken: string, refreshToken?: string) {
 }
 
 function clearStoredTokens() {
-  localStorage.removeItem("rolevault_token");
-  localStorage.removeItem("rolevault_refresh_token");
+  clearStoredAuthTokens();
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const clearSessionState = useCallback(() => {
+    clearStoredTokens();
+    setUser(null);
+    setToken(null);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener(AUTH_SESSION_REJECTED_EVENT, clearSessionState);
+    return () => window.removeEventListener(AUTH_SESSION_REJECTED_EVENT, clearSessionState);
+  }, [clearSessionState]);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("rolevault_token");
@@ -63,15 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setToken(localStorage.getItem("rolevault_token") ?? storedToken);
         })
         .catch(() => {
-          clearStoredTokens();
-          setUser(null);
-          setToken(null);
+          clearSessionState();
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [clearSessionState]);
 
   const handleTokenResponse = useCallback((res: TokenResponse) => {
     setStoredTokens(res.access_token, res.refresh_token);
@@ -79,25 +92,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user);
   }, []);
 
-  const signInWithApple = useCallback(async (identityToken: string) => {
+  const signInWithApple = useCallback(async (identityToken: string, nonce: string) => {
     const res = await apiFetch<TokenResponse>("/api/auth/apple", {
       method: "POST",
-      body: JSON.stringify({ identity_token: identityToken }),
+      body: JSON.stringify({
+        identity_token: identityToken,
+        device_id: getAuthDeviceId(),
+        nonce,
+        platform: "web",
+      }),
     });
     handleTokenResponse(res);
   }, [handleTokenResponse]);
 
   const requestMagicLink = useCallback(async (email: string) => {
-    return apiFetch<{ detail: string; token?: string; expires_at?: string }>("/api/auth/magic-link/request", {
+    return apiFetch<{ detail: string; token?: string; nonce?: string; expires_at?: string }>("/api/auth/magic-link/request", {
       method: "POST",
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, device_id: getAuthDeviceId() }),
     });
   }, []);
 
-  const verifyMagicLink = useCallback(async (magicToken: string) => {
+  const verifyMagicLink = useCallback(async (magicToken: string, nonce: string) => {
     const res = await apiFetch<TokenResponse>("/api/auth/magic-link/verify", {
       method: "POST",
-      body: JSON.stringify({ token: magicToken }),
+      body: JSON.stringify({ token: magicToken, nonce, device_id: getAuthDeviceId() }),
     });
     handleTokenResponse(res);
   }, [handleTokenResponse]);

@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import secrets
 import smtplib
@@ -50,6 +51,13 @@ def _is_apple_email_verified(value: object) -> bool:
     if isinstance(value, str):
         return value.lower() == "true"
     return False
+
+
+def _is_apple_nonce_valid(claim: object, nonce: str) -> bool:
+    if not isinstance(claim, str):
+        return False
+    nonce_hash = hashlib.sha256(nonce.encode("utf-8")).hexdigest()
+    return secrets.compare_digest(claim, nonce) or secrets.compare_digest(claim, nonce_hash)
 
 
 def _send_magic_link_email(
@@ -263,6 +271,12 @@ async def apple_auth(payload: AppleAuthRequest, db: AsyncSession = Depends(get_d
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Token verification failed: {str(last_error)}",
+        )
+
+    if not _is_apple_nonce_valid(decoded.get("nonce"), payload.nonce):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid nonce claim in Apple token",
         )
 
     apple_subject = decoded.get("sub")

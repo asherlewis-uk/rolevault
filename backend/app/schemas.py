@@ -39,6 +39,7 @@ class RefreshRequest(BaseModel):
 
 class AppleAuthRequest(BaseModel):
     identity_token: str
+    nonce: str = Field(min_length=32)
     device_id: str = Field(min_length=16, max_length=128)
     platform: Optional[str] = Field(default=None, max_length=50)
 

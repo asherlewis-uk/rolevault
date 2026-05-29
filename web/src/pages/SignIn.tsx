@@ -10,6 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
+import { createAuthNonce } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import { useInputFocus } from "@/hooks/useInputFocus";
 import { APPLE_REDIRECT_URI, APPLE_WEB_CLIENT_ID } from "@/lib/runtimeConfig";
@@ -19,6 +20,7 @@ type AppleAuthConfig = {
   scope: string;
   redirectURI: string;
   usePopup: boolean;
+  nonce?: string;
 };
 
 type AppleAuth = {
@@ -107,16 +109,18 @@ export default function SignIn() {
   const [error, setError] = useState<string | null>(null);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [magicLinkDevToken, setMagicLinkDevToken] = useState<string | null>(null);
+  const [magicLinkDevNonce, setMagicLinkDevNonce] = useState<string | null>(null);
 
   const emailFocus = useInputFocus();
 
-  const initializeAppleAuth = useCallback(async () => {
+  const initializeAppleAuth = useCallback(async (nonce?: string) => {
     const appleAuth = await loadAppleAuth();
     appleAuth.init({
       clientId: appleClientId,
       scope: "name email",
       redirectURI: appleRedirectURI,
       usePopup: true,
+      ...(nonce ? { nonce } : {}),
     });
     appleAuthRef.current = appleAuth;
     return appleAuth;
@@ -141,6 +145,7 @@ export default function SignIn() {
       }
       setMagicLinkSent(true);
       setMagicLinkDevToken(res.token ?? null);
+      setMagicLinkDevNonce(res.nonce ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send magic link");
     } finally {
@@ -152,7 +157,8 @@ export default function SignIn() {
     setError(null);
 
     try {
-      const appleAuth = appleAuthRef.current ?? await initializeAppleAuth();
+      const nonce = createAuthNonce();
+      const appleAuth = await initializeAppleAuth(nonce);
       const response = await appleAuth.signIn();
 
       const idToken = response.authorization?.id_token;
@@ -162,7 +168,7 @@ export default function SignIn() {
       }
 
       setLoading(true);
-      await signInWithApple(idToken);
+      await signInWithApple(idToken, nonce);
       navigate("/", { replace: true });
     } catch (err) {
       let message = err instanceof Error ? err.message : "Apple Sign In failed";
@@ -238,7 +244,7 @@ export default function SignIn() {
                 <span className="text-foreground font-medium">{email}</span>. Click it to sign
                 in instantly.
               </p>
-              {magicLinkDevToken && (
+              {magicLinkDevToken && magicLinkDevNonce && (
                 <div className="text-left">
                   <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">
                     Dev token
@@ -246,8 +252,14 @@ export default function SignIn() {
                   <code className="block bg-muted rounded-lg px-3 py-2 text-xs break-all text-muted-foreground">
                     {magicLinkDevToken}
                   </code>
+                  <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mt-3 mb-1">
+                    Dev nonce
+                  </p>
+                  <code className="block bg-muted rounded-lg px-3 py-2 text-xs break-all text-muted-foreground">
+                    {magicLinkDevNonce}
+                  </code>
                   <Link
-                    to={`/magic-link?token=${encodeURIComponent(magicLinkDevToken)}`}
+                    to={`/magic-link?token=${encodeURIComponent(magicLinkDevToken)}&nonce=${encodeURIComponent(magicLinkDevNonce)}`}
                     className="text-xs text-primary hover:text-primary/80 transition-colors mt-2 inline-block"
                   >
                     Click here to verify →
@@ -258,6 +270,7 @@ export default function SignIn() {
                 onClick={() => {
                   setMagicLinkSent(false);
                   setMagicLinkDevToken(null);
+                  setMagicLinkDevNonce(null);
                   setError(null);
                 }}
                 className="mt-5 text-xs text-muted-foreground hover:text-foreground transition-colors"

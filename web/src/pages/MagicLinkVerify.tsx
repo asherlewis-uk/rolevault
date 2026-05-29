@@ -10,6 +10,7 @@ export default function MagicLinkVerify() {
   const { verifyMagicLink } = useAuth();
 
   const token = searchParams.get("token");
+  const nonce = searchParams.get("nonce");
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [error, setError] = useState<string | null>(null);
   const verifyMagicLinkRef = useRef(verifyMagicLink);
@@ -24,9 +25,9 @@ export default function MagicLinkVerify() {
   }, [navigate]);
 
   useEffect(() => {
-    if (!token) {
+    if (!token || !nonce) {
       setStatus("error");
-      setError("No magic link token found in the URL.");
+      setError("No magic link token or nonce found in the URL.");
       return;
     }
 
@@ -35,7 +36,7 @@ export default function MagicLinkVerify() {
     setStatus("verifying");
     setError(null);
 
-    verifyMagicLinkRef.current(token)
+    verifyMagicLinkRef.current(token, nonce)
       .then(() => {
         if (!cancelled) {
           setStatus("success");
@@ -55,7 +56,7 @@ export default function MagicLinkVerify() {
         clearTimeout(redirectTimeout);
       }
     };
-  }, [token]);
+  }, [token, nonce]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6">
