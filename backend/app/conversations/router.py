@@ -1,12 +1,14 @@
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
 from app.database import get_db
 from app.models import User, Conversation, Message
+from app.memory.embeddings import SentenceTransformersEmbedder
+from app.memory.vector_store import ChromaVectorStore
 from app.schemas import (
     ConversationCreate,
     ConversationUpdate,
@@ -17,6 +19,32 @@ from app.schemas import (
 from app.auth.dependencies import get_current_user
 
 router = APIRouter()
+_embedder = SentenceTransformersEmbedder()
+_vector_store = ChromaVectorStore(persist_path="./chroma_data")
+
+
+def _index_message_for_memory(
+    user_id: str,
+    character_id: str,
+    message_id: str,
+    content: str,
+    role: str,
+) -> None:
+    """Background task to index a message in the vector store."""
+    try:
+        from uuid import UUID
+
+        embedding = _embedder.embed(content)
+        _vector_store.index(
+            user_id=UUID(user_id),
+            character_id=UUID(character_id),
+            message_id=UUID(message_id),
+            content=content,
+            role=role,
+            embedding=embedding,
+        )
+    except Exception:
+        pass  # Non-critical: don't fail the request over embedding errors
 
 
 @router.get("", response_model=list[ConversationResponse])
@@ -106,6 +134,7 @@ async def get_messages(
 async def create_message(
     conversation_id: UUID,
     payload: MessageCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -130,6 +159,16 @@ async def create_message(
     db.add(message)
     await db.commit()
     await db.refresh(message)
+
+    background_tasks.add_task(
+        _index_message_for_memory,
+        user_id=str(current_user.id),
+        character_id=str(conversation.character_id),
+        message_id=str(message.id),
+        content=payload.content,
+        role=payload.role,
+    )
+
     return MessageResponse.model_validate(message)
 
 

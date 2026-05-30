@@ -6,11 +6,81 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.auth.dependencies import get_current_user
 from app.config import get_settings
+from app.memory.embeddings import SentenceTransformersEmbedder
+from app.memory.vector_store import ChromaVectorStore
 from app.models import User
 from app.schemas import ExternalInferenceRequest, InferenceRequest
 
 router = APIRouter()
 settings = get_settings()
+embedder = SentenceTransformersEmbedder()
+vector_store = ChromaVectorStore(persist_path="./chroma_data")
+
+
+MEMORY_RETRIEVAL_PROMPT = (
+    "The following are relevant past interactions between the user and this character. "
+    "Use them as context to maintain continuity, but do not explicitly reference them "
+    "unless directly relevant to the current conversation.\n\n"
+)
+
+
+def _build_memory_context(
+    user_id: str,
+    character_id: str,
+    query_text: str,
+) -> str:
+    """Retrieve top-3 relevant past messages and format them as a context block."""
+    if not query_text.strip():
+        return ""
+
+    from uuid import UUID
+
+    try:
+        query_embedding = embedder.embed(query_text)
+        memories = vector_store.query(
+            user_id=UUID(user_id),
+            character_id=UUID(character_id),
+            query_embedding=query_embedding,
+            top_k=3,
+        )
+    except Exception:
+        return ""
+
+    if not memories:
+        return ""
+
+    lines = [MEMORY_RETRIEVAL_PROMPT]
+    for memory in memories:
+        role = memory.get("role", "unknown")
+        content = memory.get("content", "")
+        lines.append(f"[{role}]: {content}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def _inject_memories(
+    messages: list[dict[str, str]],
+    memory_context: str,
+) -> list[dict[str, str]]:
+    """Inject retrieved memory context into the system message of the payload."""
+    if not memory_context:
+        return messages
+
+    result: list[dict[str, str]] = []
+    injected = False
+
+    for msg in messages:
+        if msg["role"] == "system" and not injected:
+            result.append({"role": "system", "content": memory_context + "\n" + msg["content"]})
+            injected = True
+        else:
+            result.append(msg)
+
+    if not injected:
+        result.insert(0, {"role": "system", "content": memory_context})
+
+    return result
 
 
 def _join_url(base_url: str, path: str) -> str:
@@ -39,16 +109,31 @@ async def fetch_internal_model_ids() -> list[str]:
         return []
 
 
-def _messages(payload: InferenceRequest) -> list[dict[str, str]]:
+def _messages(payload: InferenceRequest, memory_context: str = "") -> list[dict[str, str]]:
     if payload.messages:
-        return [message.model_dump() for message in payload.messages]
-    return [{"role": "user", "content": payload.prompt or ""}]
+        messages = [message.model_dump() for message in payload.messages]
+        if memory_context:
+            return _inject_memories(messages, memory_context)
+        return messages
+    base = [{"role": "user", "content": payload.prompt or ""}]
+    if memory_context:
+        return _inject_memories(base, memory_context)
+    return base
 
 
-def _openai_payload(payload: InferenceRequest, default_model: str) -> dict[str, Any]:
+def _extract_query_text(payload: InferenceRequest) -> str:
+    """Extract the last user message text for embedding as a retrieval query."""
+    if payload.messages:
+        for msg in reversed(payload.messages):
+            if msg.role == "user":
+                return msg.content
+    return payload.prompt or ""
+
+
+def _openai_payload(payload: InferenceRequest, default_model: str, memory_context: str = "") -> dict[str, Any]:
     body: dict[str, Any] = {
         "model": payload.model or default_model,
-        "messages": _messages(payload),
+        "messages": _messages(payload, memory_context),
         "stream": payload.stream,
     }
     if payload.temperature is not None:
@@ -171,8 +256,16 @@ async def create_chat_completion(
     payload: InferenceRequest,
     current_user: User = Depends(get_current_user),
 ):
-    del current_user
-    body = _openai_payload(payload, settings.internal_inference_default_model)
+    memory_context = ""
+    if payload.character_id:
+        query_text = _extract_query_text(payload)
+        memory_context = _build_memory_context(
+            user_id=str(current_user.id),
+            character_id=str(payload.character_id),
+            query_text=query_text,
+        )
+
+    body = _openai_payload(payload, settings.internal_inference_default_model, memory_context)
     return await _forward_openai_compatible(
         url=_join_url(settings.internal_inference_url, "/v1/chat/completions"),
         body=body,

@@ -270,6 +270,8 @@ class InferenceRequest(BaseModel):
     model: Optional[str] = Field(default=None, min_length=1, max_length=120)
     prompt: Optional[str] = Field(default=None, min_length=1, max_length=20_000)
     messages: Optional[list[ChatMessagePayload]] = Field(default=None, min_length=1, max_length=100)
+    character_id: Optional[UUID] = Field(default=None)
+    conversation_id: Optional[UUID] = Field(default=None)
     stream: bool = True
     temperature: Optional[float] = Field(default=None, ge=0, le=2)
     max_tokens: Optional[int] = Field(default=None, ge=1, le=8192)
