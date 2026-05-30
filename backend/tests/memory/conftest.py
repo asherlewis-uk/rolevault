@@ -104,5 +104,3 @@ def mock_embedder() -> MockEmbedder:
 @pytest.fixture
 def mock_vector_store() -> MockVectorStore:
     return MockVectorStore()
-
-pytest_plugins = ["tests.auth.conftest"]
