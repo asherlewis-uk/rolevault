@@ -1,11 +1,21 @@
+import json
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
-from app.database import get_db
+from app.database import async_session_maker, get_db
 from app.models import User, Conversation, Message
 from app.memory.embeddings import SentenceTransformersEmbedder
 from app.memory.vector_store import ChromaVectorStore
@@ -15,12 +25,101 @@ from app.schemas import (
     ConversationResponse,
     MessageCreate,
     MessageResponse,
+    WSMessageIn,
+    WSMessageOut,
+    WSUserEvent,
+    WSError,
 )
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, get_current_user_ws
 
 router = APIRouter()
 _embedder = SentenceTransformersEmbedder()
 _vector_store = ChromaVectorStore(persist_path="./chroma_data")
+
+
+class ConnectionManager:
+    """Manages active WebSocket connections per conversation with pub/sub broadcast."""
+
+    def __init__(self) -> None:
+        # conversation_id -> {WebSocket, ...}
+        self._connections: dict[UUID, dict[WebSocket, dict[str, object]]] = {}
+
+    async def connect(
+        self,
+        conversation_id: UUID,
+        websocket: WebSocket,
+        user_id: UUID,
+        display_name: str | None,
+    ) -> None:
+        await websocket.accept()
+        conv = self._connections.setdefault(conversation_id, {})
+        conv[websocket] = {"user_id": user_id, "display_name": display_name}
+
+        # Broadcast join event to other participants
+        join_event = WSUserEvent(
+            type="user_joined",
+            user_id=user_id,
+            display_name=display_name,
+        )
+        await self._broadcast_raw(conversation_id, join_event.model_dump_json(), exclude=websocket)
+
+    async def disconnect(self, conversation_id: UUID, websocket: WebSocket) -> None:
+        conv = self._connections.get(conversation_id)
+        if conv is None:
+            return
+
+        meta = conv.pop(websocket, None)
+        if not conv:
+            self._connections.pop(conversation_id, None)
+
+        if meta:
+            leave_event = WSUserEvent(
+                type="user_left",
+                user_id=meta["user_id"],
+                display_name=meta.get("display_name"),
+            )
+            await self._broadcast_raw(conversation_id, leave_event.model_dump_json())
+
+    async def broadcast_message(
+        self,
+        conversation_id: UUID,
+        message: MessageResponse,
+        exclude: WebSocket | None = None,
+    ) -> None:
+        event = WSMessageOut(message=message)
+        await self._broadcast_raw(conversation_id, event.model_dump_json(), exclude=exclude)
+
+    async def _broadcast_raw(
+        self,
+        conversation_id: UUID,
+        payload: str,
+        exclude: WebSocket | None = None,
+    ) -> None:
+        conv = self._connections.get(conversation_id)
+        if conv is None:
+            return
+
+        dead: list[WebSocket] = []
+        for ws in conv:
+            if ws is exclude:
+                continue
+            try:
+                await ws.send_text(payload)
+            except Exception:
+                dead.append(ws)
+
+        for ws in dead:
+            await self.disconnect(conversation_id, ws)
+
+    async def send_error(self, websocket: WebSocket, detail: str) -> None:
+        event = WSError(detail=detail)
+        try:
+            await websocket.send_text(event.model_dump_json())
+        except Exception:
+            pass
+
+
+manager = ConnectionManager()
 
 
 def _index_message_for_memory(
@@ -220,3 +319,88 @@ async def delete_conversation(
     await db.delete(conversation)
     await db.commit()
     return None
+
+
+@router.websocket("/ws/chat/{conversation_id}")
+async def websocket_chat(
+    websocket: WebSocket,
+    conversation_id: UUID,
+    token: str = Query(...),
+):
+    """Bi-directional WebSocket for real-time chat in a conversation.
+
+    Authenticates via `token` query parameter. Once connected, clients can
+    send JSON messages and receive real-time broadcasts from other participants.
+
+    Client → Server:  {"role": "user", "content": "Hello"}
+    Server → Client:  {"type": "message_created", "message": {...}}
+    Server → Client:  {"type": "user_joined", "user_id": "...", "display_name": "..."}
+    Server → Client:  {"type": "user_left", "user_id": "...", "display_name": "..."}
+    Server → Client:  {"type": "error", "detail": "..."}
+    """
+    async with async_session_maker() as db:
+        try:
+            current_user = await get_current_user_ws(token, db)
+        except ValueError as exc:
+            await websocket.close(code=4001, reason=str(exc))
+            return
+
+        result = await db.execute(
+            select(Conversation).where(
+                and_(
+                    Conversation.id == conversation_id,
+                    Conversation.user_id == current_user.id,
+                )
+            )
+        )
+        conversation = result.scalar_one_or_none()
+        if conversation is None:
+            await websocket.close(code=4004, reason="Conversation not found")
+            return
+
+        await manager.connect(
+            conversation_id=conversation_id,
+            websocket=websocket,
+            user_id=current_user.id,
+            display_name=current_user.display_name,
+        )
+
+        try:
+            while True:
+                raw = await websocket.receive_text()
+
+                try:
+                    data = json.loads(raw)
+                    msg_in = WSMessageIn.model_validate(data)
+                except Exception:
+                    await manager.send_error(websocket, "Invalid message format")
+                    continue
+
+                message = Message(
+                    conversation_id=conversation_id,
+                    user_id=current_user.id,
+                    role=msg_in.role,
+                    content=msg_in.content,
+                )
+                db.add(message)
+                await db.commit()
+                await db.refresh(message)
+
+                response = MessageResponse.model_validate(message)
+                await manager.broadcast_message(
+                    conversation_id=conversation_id,
+                    message=response,
+                )
+
+                _index_message_for_memory(
+                    user_id=str(current_user.id),
+                    character_id=str(conversation.character_id),
+                    message_id=str(message.id),
+                    content=msg_in.content,
+                    role=msg_in.role,
+                )
+
+        except WebSocketDisconnect:
+            await manager.disconnect(conversation_id, websocket)
+        except Exception:
+            await manager.disconnect(conversation_id, websocket)

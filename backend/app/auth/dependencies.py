@@ -83,3 +83,46 @@ async def get_current_user_optional(
         return await get_current_user(credentials, db)
     except HTTPException:
         return None
+
+
+
+async def get_current_user_ws(
+    token: str,
+    db: AsyncSession,
+) -> User:
+    """Authenticate a WebSocket connection via a token query parameter."""
+    payload = decode_token(token)
+
+    if payload is None or payload.get("type") != "access":
+        raise ValueError("Invalid or expired token")
+
+    user_id_claim = payload.get("sub")
+    if not isinstance(user_id_claim, str):
+        raise ValueError("Invalid token payload")
+
+    try:
+        user_id = UUID(user_id_claim)
+    except ValueError:
+        raise ValueError("Invalid user ID in token")
+
+    set_current_user_context(db, user_id)
+    now = datetime.now(timezone.utc)
+    session_result = await db.execute(
+        select(DeviceSession).where(
+            DeviceSession.user_id == user_id,
+            DeviceSession.session_token_hash == hash_token(token),
+            DeviceSession.revoked_at.is_(None),
+            DeviceSession.expires_at > now,
+        )
+    )
+    device_session = session_result.scalar_one_or_none()
+    if device_session is None:
+        raise ValueError("Session not found")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise ValueError("User not found")
+
+    return user

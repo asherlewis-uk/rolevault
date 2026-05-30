@@ -286,3 +286,31 @@ class InferenceRequest(BaseModel):
 class ExternalInferenceRequest(InferenceRequest):
     provider: Literal["openai", "anthropic"]
     api_key: str = Field(min_length=20, max_length=4096, repr=False)
+
+# ---------------------------------------------------------------------------
+# WebSocket schemas
+# ---------------------------------------------------------------------------
+
+class WSMessageIn(BaseModel):
+    """Incoming message from a WebSocket client."""
+    role: Literal["user"]
+    content: str = Field(min_length=1, max_length=20_000)
+
+
+class WSMessageOut(BaseModel):
+    """Message broadcast to all WebSocket clients in a conversation."""
+    type: Literal["message_created"] = "message_created"
+    message: MessageResponse
+
+
+class WSUserEvent(BaseModel):
+    """Presence event: a user joined or left the conversation."""
+    type: Literal["user_joined", "user_left"]
+    user_id: UUID
+    display_name: Optional[str] = None
+
+
+class WSError(BaseModel):
+    """Error event sent to a single WebSocket client."""
+    type: Literal["error"] = "error"
+    detail: str
