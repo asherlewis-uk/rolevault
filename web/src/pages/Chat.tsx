@@ -7,6 +7,7 @@ import {
   Plus, Search,
   RefreshCw, ThumbsUp, ThumbsDown, Copy,
   Home, Compass, PlusCircle, User,
+  Wifi, WifiOff,
 } from "lucide-react";
 import { characters } from "@/data/characters";
 import { AppNavLink } from "@/components/AppNavLink";
@@ -14,6 +15,9 @@ import { useRecentChats } from "@/hooks/useRecentChats";
 import { useFavourites } from "@/hooks/useFavourites";
 import { useLLMProvider } from "@/hooks/useLLMProvider";
 import { useInputFocus } from "@/hooks/useInputFocus";
+import { useChatWebSocket } from "@/hooks/useChatWebSocket";
+import type { WSMessageCreated, ConnectionState } from "@/hooks/useChatWebSocket";
+import { useAuth } from "@/context/AuthContext";
 import { streamChat } from "@/lib/chatStream";
 import { toast } from "@/components/ui/use-toast";
 
@@ -55,6 +59,36 @@ export default function Chat() {
   const chatFocus = useInputFocus();
   const liked = isFavourite(character.id);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { token } = useAuth();
+
+  // WebSocket real-time relay — active when a backend conversation exists.
+  const [wsConversationId, setWsConversationId] = useState<string | null>(null);
+  const ws = useChatWebSocket({
+    conversationId: wsConversationId ?? "",
+    token: token ?? "",
+    enabled: Boolean(token && wsConversationId),
+  });
+
+  // Merge WS-broadcast messages into the local message list.
+  useEffect(() => {
+    if (!ws.lastEvent || ws.lastEvent.type !== "message_created") return;
+    const event = ws.lastEvent as WSMessageCreated;
+    const msg = event.message;
+
+    // Deduplicate: skip if we already have this message.
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === msg.id)) return prev;
+      return [
+        ...prev,
+        {
+          id: msg.id,
+          role: msg.role === "assistant" ? ("ai" as const) : ("user" as const),
+          text: msg.content,
+          timestamp: new Date(msg.created_at),
+        },
+      ];
+    });
+  }, [ws.lastEvent]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -78,6 +112,12 @@ export default function Chat() {
     setInput("");
     setIsTyping(true);
     addRecentChat(character.id, trimmed);
+
+    // Dual-path: relay via WebSocket for real-time broadcast, then use
+    // HTTP SSE for the AI response stream.
+    if (ws.state === "connected") {
+      ws.sendMessage(trimmed);
+    }
 
     // Convert chat history to the format the AI expects
     const historyMsgs = messages.map((m) => ({
